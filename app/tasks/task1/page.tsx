@@ -65,7 +65,7 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
     lines: [
       { t: "normal", s: "SUBJECT: Rishab Sen | EMP-034" },
       { t: "normal", s: "EXAMINER: Dr. K. Voss | Forensic Division" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "FINDINGS:" },
       { t: "normal", s: "" },
       { t: "accent", s: "  › Neural overstimulation observed" },
@@ -84,10 +84,10 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
       { t: "accent", s: "    Severe burn marks detected." },
       { t: "accent", s: "    Consistent with surge event." },
       { t: "normal", s: "" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "danger", s: "CAUSE OF DEATH: Neural overload" },
       { t: "danger", s: "  via NeuroBand device failure." },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
     ],
   },
   neural: {
@@ -95,9 +95,9 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
     lines: [
       { t: "normal", s: "SOURCE: NeuroBand v2.1 | DEVICE-RS09" },
       { t: "normal", s: "SESSION ID: NB-2024-0341" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "TIMESTAMP     EVENT" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "20:59:12  >>  Session initialized" },
       { t: "normal", s: "21:00:00  >>  Cognitive load: 12%" },
       { t: "normal", s: "21:01:33  >>  Neural sync: stable" },
@@ -111,10 +111,10 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
       { t: "danger", s: "21:03:59  >>  SUBJECT UNRESPONSIVE" },
       { t: "normal", s: "21:04:02  >>  Device auto-shutoff" },
       { t: "normal", s: "21:04:02  >>  LOG TERMINATED" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "accent", s: "WARNING: Anomalous spike at 21:02" },
       { t: "accent", s: "precedes official report by 2 min." },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
     ],
   },
   temperature: {
@@ -122,7 +122,7 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
     lines: [
       { t: "normal", s: "RECORDED BY: Auto-Sensor Unit 7B" },
       { t: "normal", s: "DISCOVERY TIME: 21:15" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "BODY TEMP AT DISCOVERY:" },
       { t: "accent", s: "  32.4°C" },
       { t: "normal", s: "" },
@@ -133,16 +133,16 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
       { t: "normal", s: "  ~1.0–1.5°C per hour" },
       { t: "normal", s: "  (ambient adjusted)" },
       { t: "normal", s: "" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "NOTE: Use Forensic Estimation Module" },
       { t: "normal", s: "to calculate time of death." },
       { t: "normal", s: "" },
       { t: "accent", s: "HINT: Normal body temp = 37.0°C" },
       { t: "accent", s: "      Delta = 37.0 - 32.4 = 4.6°C" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "Sensor calibrated: ✓ VERIFIED" },
       { t: "normal", s: "Chain of custody: ✓ INTACT" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
     ],
   },
   timeline: {
@@ -150,7 +150,7 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
     lines: [
       { t: "normal", s: "SOURCE: Security Division Report" },
       { t: "normal", s: "FILED BY: SEC-02 | 22:30 same day" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "OFFICIAL SEQUENCE OF EVENTS:" },
       { t: "normal", s: "" },
       { t: "accent", s: "  21:00  Test protocol initiated." },
@@ -169,12 +169,12 @@ const EVIDENCE: Record<EvidenceKey, EvidenceFile> = {
       { t: "normal", s: "" },
       { t: "normal", s: "  21:15  Body temperature recorded." },
       { t: "normal", s: "" },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
       { t: "normal", s: "REPORT STATUS: OFFICIAL / SEALED" },
       { t: "normal", s: "" },
       { t: "accent", s: "NOTE: Compare this timeline with" },
       { t: "accent", s: "forensic temperature estimate." },
-      { t: "dim",    s: "─────────────────────────────────────" },
+      { t: "dim", s: "─────────────────────────────────────" },
     ],
   },
 };
@@ -220,7 +220,7 @@ function matchQ2(text: string): "Yes" | "No" | null {
 const lineColor = (t: LineType): string => {
   if (t === "accent") return "#ffaa44";
   if (t === "danger") return "#ff3333";
-  if (t === "dim")    return "#551111";
+  if (t === "dim") return "#551111";
   return "#cc9999";
 };
 
@@ -325,25 +325,25 @@ const ChatMsg: FC<ChatMsgProps> = ({ msg }) => {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AutopsyTerminal() {
-  const mono  = "'Courier New', monospace";
-  const red   = "#ff3333";
+  const mono = "'Courier New', monospace";
+  const red = "#ff3333";
   const dimRed = "#551111";
-  const teal  = "#00e5cc";
+  const teal = "#00e5cc";
 
-  const [openFile,     setOpenFile]     = useState<EvidenceKey | null>(null);
-  const [openedFiles,  setOpenedFiles]  = useState<EvidenceKey[]>([]);
+  const [openFile, setOpenFile] = useState<EvidenceKey | null>(null);
+  const [openedFiles, setOpenedFiles] = useState<EvidenceKey[]>([]);
 
-  const [bodyTemp,    setBodyTemp]    = useState<string>("");
-  const [roomTemp,    setRoomTemp]    = useState<string>("");
-  const [reportTime,  setReportTime]  = useState<string>("");
-  const [todResult,   setTodResult]   = useState<string | null>(null);
-  const [todError,    setTodError]    = useState<string>("");
+  const [bodyTemp, setBodyTemp] = useState<string>("");
+  const [roomTemp, setRoomTemp] = useState<string>("");
+  const [reportTime, setReportTime] = useState<string>("");
+  const [todResult, setTodResult] = useState<string | null>(null);
+  const [todError, setTodError] = useState<string>("");
 
-  const [messages,  setMessages]  = useState<Message[]>([]);
-  const [inputVal,  setInputVal]  = useState<string>("");
-  const [chatStep,  setChatStep]  = useState<ChatStep>("idle");
-  const [typing,    setTyping]    = useState<boolean>(false);
-  const [scores,    setScores]    = useState<Scores>({ q1: 0, q2: 0, q3: 0, bonus: 0 });
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputVal, setInputVal] = useState<string>("");
+  const [chatStep, setChatStep] = useState<ChatStep>("idle");
+  const [typing, setTyping] = useState<boolean>(false);
+  const [scores, setScores] = useState<Scores>({ q1: 0, q2: 0, q3: 0, bonus: 0 });
   const [submitted, setSubmitted] = useState<boolean>(false);
 
   const chatRef = useRef<HTMLDivElement>(null);
@@ -476,9 +476,9 @@ export default function AutopsyTerminal() {
     const bt = parseFloat(bodyTemp);
     const rt = parseFloat(roomTemp);
     if (!bodyTemp || !roomTemp || !reportTime) { setTodError("ALL FIELDS REQUIRED"); return; }
-    if (isNaN(bt) || isNaN(rt))               { setTodError("INVALID TEMPERATURE VALUES"); return; }
-    if (bt >= 37 || bt <= rt)                 { setTodError("IMPLAUSIBLE TEMPERATURE VALUES"); return; }
-    if (!/^\d{2}:\d{2}$/.test(reportTime))   { setTodError("TIME FORMAT: HH:MM"); return; }
+    if (isNaN(bt) || isNaN(rt)) { setTodError("INVALID TEMPERATURE VALUES"); return; }
+    if (bt >= 37 || bt <= rt) { setTodError("IMPLAUSIBLE TEMPERATURE VALUES"); return; }
+    if (!/^\d{2}:\d{2}$/.test(reportTime)) { setTodError("TIME FORMAT: HH:MM"); return; }
     const result = calculateTOD(bodyTemp, roomTemp, reportTime);
     setTodResult(result);
   };
@@ -491,10 +491,10 @@ export default function AutopsyTerminal() {
   const totalScore = scores.q1 + scores.q2 + scores.q3 + scores.bonus;
 
   const evidenceButtons: [EvidenceKey, string][] = [
-    ["autopsy",     "Autopsy Report"],
-    ["neural",      "Neural Activity Log"],
+    ["autopsy", "Autopsy Report"],
+    ["neural", "Neural Activity Log"],
     ["temperature", "Temperature Record"],
-    ["timeline",    "Incident Timeline"],
+    ["timeline", "Incident Timeline"],
   ];
 
   const scoreRows: [string, number, number][] = [
@@ -526,7 +526,10 @@ export default function AutopsyTerminal() {
           </div>
         </div>
         <div style={{ marginTop: 10, display: "flex", gap: 20, flexWrap: "wrap" }}>
-          {(["CASE", "NeuroBand Incident"], [["CASE", "NeuroBand Incident"], ["SUBJECT", "Rishab Sen"], ["STATUS", "Post-Incident Analysis"]] as [string, string][]).map(([k, v]) => (
+          {[
+            ["CASE", "NeuroBand Incident"],
+            ["SUBJECT", "..."],   // put your real value here
+          ].map(([k, v]) => (
             <div key={k}>
               <span style={{ color: dimRed, fontSize: 10 }}>{k}: </span>
               <span style={{ color: "#cc6666", fontSize: 10 }}>{v}</span>
@@ -586,7 +589,7 @@ export default function AutopsyTerminal() {
               [
                 { label: "Body Temperature (°C):", val: bodyTemp, set: setBodyTemp, ph: "°C" },
                 { label: "Room Temperature (°C):", val: roomTemp, set: setRoomTemp, ph: "°C" },
-                { label: "Official Report Time:",  val: reportTime, set: setReportTime, ph: "HH:MM" },
+                { label: "Official Report Time:", val: reportTime, set: setReportTime, ph: "HH:MM" },
               ] as { label: string; val: string; set: (v: string) => void; ph: string }[]
             ).map(({ label, val, set, ph }) => (
               <div key={label} style={{ marginBottom: 10 }}>
@@ -597,7 +600,7 @@ export default function AutopsyTerminal() {
                   placeholder={ph}
                   style={{ background: "#0c0000", border: `1px solid ${dimRed}`, color: "#ff9999", fontFamily: mono, fontSize: 11, padding: "6px 10px", width: "100%", outline: "none" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = red)}
-                  onBlur={(e)  => (e.currentTarget.style.borderColor = dimRed)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = dimRed)}
                 />
               </div>
             ))}
@@ -684,9 +687,9 @@ export default function AutopsyTerminal() {
               onChange={(e) => setInputVal(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
               placeholder={
-                chatStep === "q3"   ? "Type your inference (max 200 chars)..."
-                : chatStep === "done" ? "Analysis complete"
-                : "Type a message..."
+                chatStep === "q3" ? "Type your inference (max 200 chars)..."
+                  : chatStep === "done" ? "Analysis complete"
+                    : "Type a message..."
               }
               disabled={chatStep === "done"}
               style={{ flex: 1, background: "#080f1e", border: "1px solid #00e5cc22", color: "#a0e8d8", fontFamily: mono, fontSize: 10, padding: "7px 10px", outline: "none", opacity: chatStep === "done" ? 0.4 : 1 }}
@@ -731,4 +734,5 @@ export default function AutopsyTerminal() {
       `}</style>
     </div>
   );
+
 }
