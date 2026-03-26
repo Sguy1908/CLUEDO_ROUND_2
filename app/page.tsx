@@ -30,10 +30,10 @@ export default function Page() {
         {/* 🔴 DETECTIVE TITLE */}
         <div className={`${gothic.className} text-3xl leading-6 tracking-wide`}>
           <div className="text-white drop-shadow-[0_0_6px_rgba(255,0,0,0.6)]">
-            Detective
+            Supari
           </div>
           <div className="text-red-500 drop-shadow-[0_0_10px_rgba(255,0,0,0.9)]">
-            agency
+            Agency
           </div>
         </div>
 
@@ -80,15 +80,12 @@ export default function Page() {
 
           <div className="mt-6 text-sm tracking-wider space-y-2">
             <div>
-              Priority: <span className="text-red-500">CRITICAL</span>
+              Everything has a Cost
             </div>
-            <div>Subject: Software Engineer</div>
-            <div>Company: NeuroSphere Technologies</div>
-          </div>
-
-          <div className="mt-6 text-sm text-gray-300 space-y-1">
-            <div>Employee missing. Suspected insider data theft.</div>
-            <div>Status: Active Investigation</div>
+            <div>The deeper you go, the harder it gets to turn back</div>
+            <div>Not everything is meant to be uncovered</div>
+            <div>Some truths are better left buried</div>
+            <div>Proceed only if you’re ready</div>
           </div>
 
           <div className="mt-8 flex gap-4">
@@ -97,13 +94,6 @@ export default function Page() {
               className="border border-red-600 px-6 py-2 hover:bg-red-600 transition"
             >
               START INVESTIGATION
-            </button>
-
-            <button
-              onClick={() => go("/view-evidence")}
-              className="border border-gray-600 px-6 py-2 hover:border-red-600 hover:text-red-500 transition"
-            >
-              VIEW EVIDENCE
             </button>
           </div>
         </div>
@@ -160,6 +150,7 @@ export default function Page() {
       </div>
 
       {/* GHOST ASSISTANT */}
+      <button onClick={() => go("/ghost-assistant")}>
       <div className="fixed bottom-6 right-6">
         <div className="relative w-20 h-20">
           <Image
@@ -168,12 +159,9 @@ export default function Page() {
             fill
             className="object-contain"
           />
-
-          <div className="absolute -top-10 right-0 bg-white text-black text-xs px-3 py-1 rounded-full">
-            How may I assist you?
-          </div>
         </div>
       </div>
+      </button>
     </div>
   );
 }
