@@ -1,5 +1,5 @@
 "use client";
-
+// @ts-nocheck
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import ghostIdImage from "@/assets/ghost-id.jpeg";
@@ -8,98 +8,130 @@ type EvidenceId = string;
 type ChainId = "A" | "B" | "C";
 
 interface Evidence {
-  id: EvidenceId;
-  title: string;
-  tag: string;
-  content: string;
-  isRedHerring?: boolean;
+    id: EvidenceId;
+    title: string;
+    tag: string;
+    content: string;
+    isRedHerring?: boolean;
 }
 
 interface ChainSlot {
-  label: "CAUSE" | "ENABLING DECISION" | "CONSEQUENCE";
-  evidenceId: EvidenceId | null;
+    label: "CAUSE" | "ENABLING DECISION" | "CONSEQUENCE";
+    evidenceId: EvidenceId | null;
 }
 
 interface Chain {
-  id: ChainId;
-  slots: [ChainSlot, ChainSlot, ChainSlot];
-  department: string | null;
-  suspect: string | null;
-  verified: boolean;
+    id: ChainId;
+    slots: [ChainSlot, ChainSlot, ChainSlot];
+    department: string | null;
+    suspect: string | null;
+    verified: boolean;
 }
 
 // ── Theme tokens (red/black like the Code Audit UI) ───────────────────────────
 const T = {
-  bg:        "#0a0a0a",
-  bgPanel:   "#111111",
-  bgDeep:    "#0d0d0d",
-  border:    "#2a1010",
-  borderMid: "#4a1a1a",
-  borderHot: "#7a2020",
-  red:       "#cc3333",
-  redBright: "#ff4444",
-  redDim:    "#7a2222",
-  redFaint:  "#3a1010",
-  amber:     "#cc7700",
-  amberDim:  "#6a3a00",
-  white:     "#e0d0d0",
-  whiteDim:  "#8a7a7a",
-  whiteGhost:"#3a3030",
-  green:     "#22aa44",
-  greenDim:  "#0a3a1a",
-  scan:      "rgba(30,0,0,0.05)",
-  cyan:      "#22cccc",
-  cyanDim:   "#0a3a3a",
+    bg: "#0a0a0a",
+    bgPanel: "#111111",
+    bgDeep: "#0d0d0d",
+    border: "#2a1010",
+    borderMid: "#4a1a1a",
+    borderHot: "#7a2020",
+    red: "#cc3333",
+    redBright: "#ff4444",
+    redDim: "#7a2222",
+    redFaint: "#3a1010",
+    amber: "#cc7700",
+    amberDim: "#6a3a00",
+    white: "#e0d0d0",
+    whiteDim: "#8a7a7a",
+    whiteGhost: "#3a3030",
+    green: "#22aa44",    // used only for "verified / correct"
+    greenDim: "#0a3a1a",
+    cyan: "#00cccc",
+    cyanDim: "#003333",
+    scan: "rgba(30,0,0,0.05)",
 };
 
 const EVIDENCE: Evidence[] = [
-  { id:"autopsy_temp",       title:"Autopsy Temperature Report",         tag:"FORENSIC",
-    content:"Body temperature at discovery: 32.4°C\nRoom temperature: 21°C\nEstimated time of death: ~20:47\nOfficial incident report time: 21:04\n\nConclusion: Body cooling indicates death occurred before the official timeline.\nPossible explanation: Delayed reporting or post-incident intervention." },
-  { id:"neural_log",         title:"Neural Activity Log",                tag:"SYSTEM LOG",
-    content:"21:02 Neural spike detected\n21:03 Sustained stimulation overload\n21:04 Subject collapse\n\nSystem Status: Limiter response unstable. Shutdown trigger requested.\n\nObservation: Neural stimulation exceeded safe operating threshold." },
-  { id:"limiter_hw",         title:"Limiter Hardware Revision (REV-B)",  tag:"HARDWARE",
-    content:"Component: Feedback Limiter Module\nExpected revision: REV-A\nInstalled module: REV-B\nSerial mismatch detected.\n\nInspection notes: Limiter board appears modified.\nShutdown response timing may be affected.", isRedHerring:true },
-  { id:"fw_tolerance",       title:"Firmware Limiter Tolerance Increase",tag:"FIRMWARE",
-    content:"Module: Limiter Control\nConfiguration update: Tolerance threshold increased 1.0 → 1.3\nAuthor: lsuri_fw\n\nComment: Adjustment applied to reduce false spike detection during calibration." },
-  { id:"override_approval",  title:"Override Approval — a.m_arch",       tag:"AUTHORIZATION",
-    content:"Temporary safety override approved.\nAuthority: Architecture Division\nAccount: a.m_arch\n\nPurpose: Allow calibration sequence to complete without triggering shutdown protection." },
-  { id:"shutdown_suppressed",title:"Shutdown Escalation Suppressed",     tag:"SYSTEM EVENT",
-    content:"Auto-shutdown escalation triggered.\nStatus: SUPPRESSED\nReason: Override state active\n\nNote: Shutdown cannot proceed while architecture override mode remains enabled." },
-  { id:"limiter_instability",title:"Limiter Instability Detected",       tag:"DIAGNOSTIC",
-    content:"Spike amplitude exceeded limiter threshold.\nLimiter response delayed.\nOutput channel continued stimulation for several seconds beyond safe limit.\n\nRisk Level: CRITICAL" },
-  { id:"export_log",         title:"Export Log — nb_v4_backup.zip",      tag:"TRANSFER",
-    content:"File exported: nb_v4_backup.zip\nSource: wrk04\nTransfer path: wrk04 → nas02 → usb07 → external host\nExport authorization: a.m_arch", isRedHerring:true },
-  { id:"arch_risk_memo",     title:"Architecture Risk Memo",              tag:"MEMO",
-    content:"System stability depends on manual monitoring during test mode.\nTemporary overrides permitted for calibration and tuning.\n\nReminder: Overrides must be removed before production deployment.", isRedHerring:true },
-  { id:"security_access",    title:"Security Access Log",                tag:"ACCESS",
-    content:"User: vk_sec\nAccess time: 21:05\nSystem accessed: Incident reporting console\nAction performed: Log inspection and system review." },
-  { id:"incident_timestamp", title:"Incident Reporting Timestamp",       tag:"OFFICIAL",
-    content:"Reported time of collapse: 21:04\nReported by: Security Operations\n\nNote: Incident timeline recorded after system shutdown attempt." },
-  { id:"ghost_patch",        title:"Ghost Patch Reference",              tag:"PATCH",
-    content:"Patch ID: prod_hotfix_ghost41\nChanges:\n• extended spike tolerance window\n• delayed shutdown escalation\nAuthor tag: ghost41\nDeployment mode: temporary override" },
-  { id:"maintenance_log",    title:"Maintenance Log Entry",              tag:"MAINTENANCE",
-    content:"Routine inspection completed. Components cleaned and reseated. No faults reported.\n\nEngineer signature: Rishab Patel", isRedHerring:true },
-  { id:"calibration_notes",  title:"Device Calibration Notes",           tag:"CALIBRATION",
-    content:"Neural output calibration successful. Minor limiter drift observed but remained within tolerance.\n\nTest environment stable.", isRedHerring:true },
-  { id:"thermal_sensor",     title:"Thermal Sensor Calibration",         tag:"SENSOR",
-    content:"Room sensors recalibrated earlier in the day. Temperature readings confirmed accurate.", isRedHerring:true },
-  { id:"ghostid_trace",      title:"GhostID Trace Fragment",             tag:"TRACE",
-    content:"Reference detected: ghost41\nPatch activity linked to temporary override deployment.\nOrigin of patch remains unidentified.\n\nFlag: Unverified system modification.", isRedHerring:true },
+    {
+        id: "autopsy_temp", title: "Autopsy Temperature Report", tag: "FORENSIC",
+        content: "Body temperature at discovery: 32.4°C\nRoom temperature: 21°C\nEstimated time of death: ~20:47\nOfficial incident report time: 21:04\n\nConclusion: Body cooling indicates death occurred before the official timeline.\nPossible explanation: Delayed reporting or post-incident intervention."
+    },
+    {
+        id: "neural_log", title: "Neural Activity Log", tag: "SYSTEM LOG",
+        content: "21:02 Neural spike detected\n21:03 Sustained stimulation overload\n21:04 Subject collapse\n\nSystem Status: Limiter response unstable. Shutdown trigger requested.\n\nObservation: Neural stimulation exceeded safe operating threshold."
+    },
+    {
+        id: "limiter_hw", title: "Limiter Hardware Revision (REV-B)", tag: "HARDWARE",
+        content: "Component: Feedback Limiter Module\nExpected revision: REV-A\nInstalled module: REV-B\nSerial mismatch detected.\n\nInspection notes: Limiter board appears modified.\nShutdown response timing may be affected.", isRedHerring: true
+    },
+    {
+        id: "fw_tolerance", title: "Firmware Limiter Tolerance Increase", tag: "FIRMWARE",
+        content: "Module: Limiter Control\nConfiguration update: Tolerance threshold increased 1.0 → 1.3\nAuthor: lsuri_fw\n\nComment: Adjustment applied to reduce false spike detection during calibration."
+    },
+    {
+        id: "override_approval", title: "Override Approval — a.m_arch", tag: "AUTHORIZATION",
+        content: "Temporary safety override approved.\nAuthority: Architecture Division\nAccount: a.m_arch\n\nPurpose: Allow calibration sequence to complete without triggering shutdown protection."
+    },
+    {
+        id: "shutdown_suppressed", title: "Shutdown Escalation Suppressed", tag: "SYSTEM EVENT",
+        content: "Auto-shutdown escalation triggered.\nStatus: SUPPRESSED\nReason: Override state active\n\nNote: Shutdown cannot proceed while architecture override mode remains enabled."
+    },
+    {
+        id: "limiter_instability", title: "Limiter Instability Detected", tag: "DIAGNOSTIC",
+        content: "Spike amplitude exceeded limiter threshold.\nLimiter response delayed.\nOutput channel continued stimulation for several seconds beyond safe limit.\n\nRisk Level: CRITICAL"
+    },
+    {
+        id: "export_log", title: "Export Log — nb_v4_backup.zip", tag: "TRANSFER",
+        content: "File exported: nb_v4_backup.zip\nSource: wrk04\nTransfer path: wrk04 → nas02 → usb07 → external host\nExport authorization: a.m_arch", isRedHerring: true
+    },
+    {
+        id: "arch_risk_memo", title: "Architecture Risk Memo", tag: "MEMO",
+        content: "System stability depends on manual monitoring during test mode.\nTemporary overrides permitted for calibration and tuning.\n\nReminder: Overrides must be removed before production deployment.", isRedHerring: true
+    },
+    {
+        id: "security_access", title: "Security Access Log", tag: "ACCESS",
+        content: "User: vk_sec\nAccess time: 21:05\nSystem accessed: Incident reporting console\nAction performed: Log inspection and system review."
+    },
+    {
+        id: "incident_timestamp", title: "Incident Reporting Timestamp", tag: "OFFICIAL",
+        content: "Reported time of collapse: 21:04\nReported by: Security Operations\n\nNote: Incident timeline recorded after system shutdown attempt."
+    },
+    {
+        id: "ghost_patch", title: "Ghost Patch Reference", tag: "PATCH",
+        content: "Patch ID: prod_hotfix_ghost41\nChanges:\n• extended spike tolerance window\n• delayed shutdown escalation\nAuthor tag: ghost41\nDeployment mode: temporary override"
+    },
+    {
+        id: "maintenance_log", title: "Maintenance Log Entry", tag: "MAINTENANCE",
+        content: "Routine inspection completed. Components cleaned and reseated. No faults reported.\n\nEngineer signature: Rishab Patel", isRedHerring: true
+    },
+    {
+        id: "calibration_notes", title: "Device Calibration Notes", tag: "CALIBRATION",
+        content: "Neural output calibration successful. Minor limiter drift observed but remained within tolerance.\n\nTest environment stable.", isRedHerring: true
+    },
+    {
+        id: "thermal_sensor", title: "Thermal Sensor Calibration", tag: "SENSOR",
+        content: "Room sensors recalibrated earlier in the day. Temperature readings confirmed accurate.", isRedHerring: true
+    },
+    {
+        id: "ghostid_trace", title: "GhostID Trace Fragment", tag: "TRACE",
+        content: "Reference detected: ghost41\nPatch activity linked to temporary override deployment.\nOrigin of patch remains unidentified.\n\nFlag: Unverified system modification.", isRedHerring: true
+    },
 ];
 
-const CORRECT: Record<ChainId,{slots:[EvidenceId,EvidenceId,EvidenceId];dept:string;suspect:string}> = {
-  A:{ slots:["override_approval","shutdown_suppressed","neural_log"],      dept:"Architecture Division", suspect:"Dr Aarya Mehta" },
-  B:{ slots:["fw_tolerance","limiter_instability","ghost_patch"],          dept:"Firmware Engineering",  suspect:"Leena Suri"    },
-  C:{ slots:["autopsy_temp","security_access","incident_timestamp"],       dept:"Security Operations",   suspect:"Vikrant Kaul"  },
+const CORRECT: Record<ChainId, { slots: [EvidenceId, EvidenceId, EvidenceId]; dept: string; suspect: string }> = {
+    A: { slots: ["override_approval", "shutdown_suppressed", "neural_log"], dept: "Architecture Division", suspect: "Dr Aarya Mehta" },
+    B: { slots: ["fw_tolerance", "limiter_instability", "ghost_patch"], dept: "Firmware Engineering", suspect: "Leena Suri" },
+    C: { slots: ["autopsy_temp", "security_access", "incident_timestamp"], dept: "Security Operations", suspect: "Vikrant Kaul" },
 };
 
-const DEPTS   = ["Architecture Division","Firmware Engineering","Security Operations","Research Team","Operations"];
-const SUSPECTS= ["Dr Aarya Mehta","Leena Suri","Vikrant Kaul","Kavya Sharma","GURU JI","Rajveer Malhotra","Arjun Nanda"];
-const SLOT_LABELS:Array<"CAUSE"|"ENABLING DECISION"|"CONSEQUENCE">=["CAUSE","ENABLING DECISION","CONSEQUENCE"];
-const HINTS=[
-  "Review events where safety overrides were requested and approved.",
-  "Track which account authorized the override — it appears in multiple logs.",
-  "Architecture approved override → shutdown suppressed. Firmware raised limiter tolerance → spike amplified. Security accessed logs post-collapse.",
+const DEPTS = ["Architecture Division", "Firmware Engineering", "Security Operations", "Research Team", "Operations"];
+const SUSPECTS = ["Dr Aarya Mehta", "Leena Suri", "Vikrant Kaul", "Kavya Sharma", "GURU JI", "Rajveer Malhotra", "Arjun Nanda"];
+const SLOT_LABELS: Array<"CAUSE" | "ENABLING DECISION" | "CONSEQUENCE"> = ["CAUSE", "ENABLING DECISION", "CONSEQUENCE"];
+const HINTS = [
+    "Review events where safety overrides were requested and approved.",
+    "Track which account authorized the override — it appears in multiple logs.",
+    "Architecture approved override → shutdown suppressed. Firmware raised limiter tolerance → spike amplified. Security accessed logs post-collapse.",
 ];
 
 // Tag icons mapping
@@ -122,15 +154,15 @@ const TAG_ICONS: Record<string, string> = {
   "TRACE": "👻",
 };
 
-function makeChains():Chain[]{
-  return (["A","B","C"] as ChainId[]).map(id=>({
-    id, department:null, suspect:null, verified:false,
-    slots:SLOT_LABELS.map(label=>({label,evidenceId:null})) as [ChainSlot,ChainSlot,ChainSlot],
+function makeChains(): Chain[] {
+  return (["A", "B", "C"] as ChainId[]).map(id => ({
+    id, department: null, suspect: null, verified: false,
+    slots: SLOT_LABELS.map(label => ({ label, evidenceId: null })) as [ChainSlot, ChainSlot, ChainSlot],
   }));
 }
 
 // ── Error Popup (replaces red marks) ──────────────────────────────────────────
-function ErrorPopup({message,onClose}:{message:string;onClose:()=>void}){
+function ErrorPopup({ message, onClose }: { message: string; onClose: () => void }) {
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
       <div onClick={e=>e.stopPropagation()} style={{background:T.bgPanel,border:`1px solid ${T.borderHot}`,borderRadius:6,padding:28,maxWidth:420,width:"90%",boxShadow:`0 0 60px ${T.redFaint}, 0 0 120px rgba(204,51,51,0.1)`,textAlign:"center"}}>
@@ -336,13 +368,13 @@ function Task6(){
     }
   };
 
-  const useHint=()=>{
-    if(hintUsed>=3)return;
-    const cost=[15,25,40][hintUsed];
-    setScore(s=>s-cost);setHintText(HINTS[hintUsed]);setHintUsed(h=>h+1);
-  };
+const useHint=()=>{
+  if(hintUsed>=3)return;
+  const cost=[15,25,40][hintUsed];
+  setScore(s=>s-cost);setHintText(HINTS[hintUsed]);setHintUsed(h=>h+1);
+};
 
-  const ready=chains.every(c=>c.slots.every(s=>s.evidenceId)&&c.department&&c.suspect);
+const ready=chains.every(c=>c.slots.every(s=>s.evidenceId)&&c.department&&c.suspect);
 
   // Count placed evidence
   const placedIds=new Set(chains.flatMap(c=>c.slots.map(s=>s.evidenceId).filter(Boolean)));

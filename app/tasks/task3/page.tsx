@@ -1,4 +1,5 @@
 'use client'
+// @ts-nocheck
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 // ─── TYPES ───────────────────────────────────────────────
@@ -39,13 +40,13 @@ const GAME_INSTRUCTIONS: Record<number, { title: string; steps: string[]; tip: s
         tip: "S only outputs to the right. X only accepts from the left. Work outward from both ends to meet in the middle.",
     },
     1: {
-        title: "TILE FLIP",
+        title: "CRACK THE CODE",
         steps: [
-            "Watch the 5×5 grid — tiles flash as a dim highlight for 4 seconds. Look carefully.",
-            "After it clears, click tiles to recreate the exact pattern you saw.",
-            "Press SUBMIT PATTERN to check. A mismatch auto-generates a new pattern.",
+            "Use the number pad to build a 4-digit guess — each digit can only appear once. Press SUBMIT to lock it in.",
+            "Each guess gives two clues: ✓ (white) means the digit is correct AND in the right slot. ◉ (yellow) means the digit exists in the code but is in the wrong slot.",
+            "Read the feedback row-by-row to eliminate wrong digits and pin down correct positions. You get 5 guesses — use them wisely.",
         ],
-        tip: "Retry is completely free — use it to memorize the pattern row-by-row rather than all at once.",
+        tip: "First guess: pick 4 digits that are spread across the range, e.g. 1 4 7 9. This gives you the most information at once. Then use ✓ hits to lock slots, and ◉ hits to try that digit in a different position.",
     },
     2: {
         title: "MEMORY MATCH",
@@ -57,13 +58,13 @@ const GAME_INSTRUCTIONS: Record<number, { title: string; steps: string[]; tip: s
         tip: "No penalty for mismatches — flip freely to map card positions before committing to a pair.",
     },
     3: {
-        title: "ARROW PATH",
+        title: "STROOP CHALLENGE",
         steps: [
-            "Click any cell to rotate its arrow one step clockwise: → ↓ ← ↑ and back.",
-            "Orient all arrows so the path flows continuously from START (top-left) to EXIT (bottom-right).",
-            "A live preview highlights how far your current arrows reach. When EXIT is reached, press VERIFY PATH.",
+            "A word will appear on screen in a colored ink — the word and its color will NOT match.",
+            "Click the button that matches the INK COLOR of the word — not what the word says.",
+            "Get 5 correct answers in a row to unlock the fragment.",
         ],
-        tip: "The path preview updates in real time — follow the green-tinted cells to see where your chain breaks and rotate that cell next.",
+        tip: "Your brain automatically reads the word — resist it. Focus only on the color of the letters, not the meaning.",
     },
     4: {
         title: "SHREDDED DOCUMENT",
@@ -103,7 +104,7 @@ const GAME_INSTRUCTIONS: Record<number, { title: string; steps: string[]; tip: s
     },
 };
 
-const HINT_COSTS: Record<HintLevel, number> = { weak: 5, medium: 10, strong: 20 }; // medium kept in type but not shown
+const HINT_COSTS: Record<HintLevel, number> = { weak: 5, medium: 10, strong: 10 };
 
 const HINTS: Record<number, Partial<Record<HintLevel, string>>> = {
     // 0 — Dev Workstation: Signal Routing
@@ -111,20 +112,20 @@ const HINTS: Record<number, Partial<Record<HintLevel, string>>> = {
         weak: "The path bends twice. First it goes straight DOWN through the center column, then turns LEFT across the middle row, then turns DOWN again on the left side, and finally goes RIGHT along the bottom row to EXIT.",
         strong: "Rotate these cells: (1,2)→┃  (2,2)→┘  (2,1)→━  (2,0)→┬  (3,0)→┃  (4,0)→└  (4,1)→━. Leave all other cells as they are.",
     },
-    // 1 — Build Console: Tile Flip
+    // 1 — Build Console: Crack the Code (dynamic hints injected by puzzle)
     1: {
-        weak: "The lit tiles tend to cluster — rarely are they spread perfectly evenly. Look for a cluster of 2–3 adjacent tiles and start with those. The counter at the bottom tells you the exact number you need to select.",
-        strong: "Hit RETRY repeatedly — the pattern randomises each time. Keep retrying until you land a pattern of only 4 tiles (the minimum). A 4-tile pattern on a 4×4 grid is straightforward to memorise in one glance.",
+        weak: "Loading hint...",
+        strong: "Loading hint...",
     },
-    // 2 — Artifact Cache: Memory Match
+    // 2 — Artifact Cache: Memory Match (auto-flip hints injected by puzzle)
     2: {
-        weak: "All pairs follow a system: the left half is a 3-letter device code (WRK, NAS, USB, EXT, SYS, NET, PKT, SEC) and the right half is its identifier (04, 02, 07, HOST, LOG, KEY, 07A, HEX). When you flip a right-half card, you already know exactly which left-half to look for.",
-        strong: "The 8 pairs in full: WRK↔04, NAS↔02, USB↔07, EXT↔HOST, SYS↔LOG, NET↔KEY, PKT↔07A, SEC↔HEX. Flip all 4 cards in the top row first and memorise their positions, then scan each new card you flip against that memory.",
+        weak: "One matched pair is about to flip and lock itself. Watch carefully.",
+        strong: "Two more matched pairs will flip and lock automatically. Pay attention.",
     },
-    // 3 — Storage Vault: Arrow Path
+    // 3 — Storage Vault: Stroop Challenge
     3: {
-        weak: "The path snakes in an S-shape: down the center column, left across row 2, then down the left column, then right across the bottom row. Every cell NOT on this route can be ignored entirely — only rotate cells that fall on this snake.",
-        strong: "Set each cell on the path to these exact arrows — START(0,2)↓ · (1,2)↓ · (2,2)← · (2,1)← · (2,0)↓ · (3,0)↓ · (4,0)→ · (4,1)→ · EXIT(4,2). Click a cell repeatedly until its arrow matches.",
+        weak: "Your brain reads the word automatically — fight it. Look ONLY at the color of the letters, not what the word spells. Focus on the physical color you see.",
+        strong: "Name the ink color out loud before clicking. Say 'the letters are painted in RED' not 'the word says GREEN'. Saying the color out loud breaks the word-reading reflex.",
     },
     // 4 — Backup Array: Shredded Document
     4: {
@@ -138,8 +139,8 @@ const HINTS: Record<number, Partial<Record<HintLevel, string>>> = {
     },
     // 6 — Security Monitor: Simon Says
     6: {
-        weak: "Use your fingers. Each time a button flashes, tap the table in that button's position (top-left, top-right, bottom-left, bottom-right). By round 4 you'll have a physical memory of the sequence in your hand, not just in your head.",
-        strong: "Each round only adds ONE new button at the end. So in round 3, if you remember rounds 1 and 2 correctly, all you need to memorise is which single button flashes last. Focus entirely on the final flash of each round and you only ever need to remember one new thing.",
+        weak: "Label each button by position — Top-Left, Top-Right, Bottom-Left, Bottom-Right. Mouth the position name silently each time it flashes. You are memorizing locations, not colors.",
+        strong: "Each new round adds exactly ONE button at the end. You already know the previous sequence — just watch the very last flash and add it. Build the chain: Round 1=1 button, Round 2=same+1, Round 3=same+1, and so on.",
     },
     // 7 — External Gateway: Code Alignment
     7: {
@@ -157,7 +158,7 @@ const PIPE_CONN: Record<string, { l: number; r: number; u: number; d: number }> 
     "┬": { l: 1, r: 1, u: 0, d: 1 }, "┴": { l: 1, r: 1, u: 1, d: 0 },
     "┤": { l: 1, r: 0, u: 1, d: 1 }, "├": { l: 0, r: 1, u: 1, d: 1 },
     "┼": { l: 1, r: 1, u: 1, d: 1 },
-    "S": { l: 0, r: 0, u: 0, d: 1 }, "X": { l: 1, r: 0, u: 0, d: 0 },
+    "S": { l: 1, r: 1, u: 1, d: 1 }, "X": { l: 1, r: 1, u: 1, d: 1 },
 };
 const ROTATE_MAP: Record<string, string> = {
     "━": "┃", "┃": "━", "┐": "└", "└": "┘", "┘": "┌", "┌": "┐",
@@ -196,12 +197,74 @@ const SIMON_COLORS = ["#ff3366", "#ff3333", "#cc2222", "#ffcc00"];
 const MEM_PAIRS: [string, string][] = [["WRK", "04"], ["NAS", "02"], ["USB", "07"], ["EXT", "HOST"], ["SYS", "LOG"], ["NET", "KEY"], ["PKT", "07A"], ["SEC", "HEX"]];
 const AP_DIRS = ["→", "↓", "←", "↑"];
 
-const FILE_CONTENTS: Record<string, { name: string; lines: { cls: string; text: string }[]; ghostid: string }> = {
-    control_loop: { name: "control_loop.cfg", lines: [{ cls: "comment", text: "# NeuroBand v4 Control Loop Configuration" }, { cls: "key", text: "neural_output_mode       = " }, { cls: "val", text: "adaptive" }, { cls: "key", text: "feedback_channel         = " }, { cls: "val", text: "active" }, { cls: "key", text: "loop_gain                = " }, { cls: "val", text: "variable" }, { cls: "key", text: "stimulation_profile      = " }, { cls: "val", text: "dynamic" }, { cls: "key", text: "safety_override          = " }, { cls: "warn", text: "permitted" }, { cls: "key", text: "control_latency_ms       = " }, { cls: "val", text: "12" }, { cls: "key", text: "controller_revision      = " }, { cls: "val", text: "NB4_CTRL_A3" }, { cls: "key", text: "firmware_channel         = " }, { cls: "val", text: "production" }], ghostid: "The device can increase neural stimulation dynamically." },
-    safety_limits: { name: "safety_limits.cfg", lines: [{ cls: "comment", text: "# Safety Limits Configuration" }, { cls: "key", text: "max_output_current       = " }, { cls: "danger", text: "42" }, { cls: "key", text: "max_stimulation_duration = " }, { cls: "val", text: "120s" }, { cls: "key", text: "auto_shutdown_threshold  = " }, { cls: "warn", text: "dynamic" }, { cls: "key", text: "shutdown_delay           = " }, { cls: "danger", text: "15s" }, { cls: "key", text: "manual_override          = " }, { cls: "warn", text: "enabled" }, { cls: "key", text: "override_clear_required  = " }, { cls: "danger", text: "false" }, { cls: "key", text: "limit_profile            = " }, { cls: "warn", text: "clinical_test_mode" }], ghostid: "Manual overrides can bypass automatic safety thresholds." },
-    feedback_monitor: { name: "feedback_monitor.cfg", lines: [{ cls: "comment", text: "# Neural Feedback Monitoring" }, { cls: "key", text: "sensor_mode              = " }, { cls: "val", text: "continuous" }, { cls: "key", text: "feedback_noise_filter    = " }, { cls: "danger", text: "disabled" }, { cls: "key", text: "spike_detection          = " }, { cls: "warn", text: "passive" }, { cls: "key", text: "feedback_sampling_rate   = " }, { cls: "val", text: "1000hz" }, { cls: "key", text: "shutdown_trigger         = " }, { cls: "warn", text: "external" }, { cls: "key", text: "warning_escalation       = " }, { cls: "danger", text: "delayed" }], ghostid: "Neural spike detection relies on external shutdown triggers." },
-    shutdown_logic: { name: "shutdown_logic.patch", lines: [{ cls: "comment", text: "# Patch Reference" }, { cls: "key", text: "patch_id          : " }, { cls: "warn", text: "prod_hotfix_ghost41" }, { cls: "key", text: "author_tag        : " }, { cls: "danger", text: "ghost41" }, { cls: "key", text: "changes           :" }, { cls: "danger", text: "  - disable immediate shutdown" }, { cls: "danger", text: "  - extend spike tolerance window" }, { cls: "danger", text: "  - suppress warning escalation" }, { cls: "key", text: "deployment_mode   : " }, { cls: "warn", text: "temporary_override" }], ghostid: "Safety shutdown response time has been extended." },
-    arch_notes: { name: "architecture_notes.txt", lines: [{ cls: "comment", text: "# NeuroBand v4 Architecture Review Notes" }, { cls: "text", text: "" }, { cls: "text", text: "Export requested for architecture inspection." }, { cls: "text", text: "" }, { cls: "key", text: "Environment   : " }, { cls: "val", text: "wrk04 test workstation" }, { cls: "key", text: "Approval      : " }, { cls: "warn", text: "a.m_arch" }, { cls: "text", text: "" }, { cls: "comment", text: "Reminder: Temporary override must be removed" }, { cls: "comment", text: "before production deployment." }, { cls: "comment", text: "Internal review only." }], ghostid: "Temporary override approval was granted during system review." },
+// Each line is now {cls, text, valCls?, val?} — if val is present, key+val render inline on same row
+type FileLine = { cls: string; text: string; valCls?: string; val?: string };
+const FILE_CONTENTS: Record<string, { name: string; lines: FileLine[]; ghostid: string }> = {
+    control_loop: {
+        name: "control_loop.cfg", lines: [
+            { cls: "comment", text: "# NeuroBand v4 Control Loop Configuration" },
+            { cls: "key", text: "neural_output_mode", valCls: "val", val: "adaptive" },
+            { cls: "key", text: "feedback_channel", valCls: "val", val: "active" },
+            { cls: "key", text: "loop_gain", valCls: "val", val: "variable" },
+            { cls: "key", text: "stimulation_profile", valCls: "val", val: "dynamic" },
+            { cls: "key", text: "safety_override", valCls: "warn", val: "permitted" },
+            { cls: "key", text: "control_latency_ms", valCls: "val", val: "12" },
+            { cls: "key", text: "controller_revision", valCls: "val", val: "NB4_CTRL_A3" },
+            { cls: "key", text: "firmware_channel", valCls: "val", val: "production" },
+        ], ghostid: "The device can increase neural stimulation dynamically."
+    },
+    safety_limits: {
+        name: "safety_limits.cfg", lines: [
+            { cls: "comment", text: "# Safety Limits Configuration" },
+            { cls: "key", text: "max_output_current", valCls: "danger", val: "42" },
+            { cls: "key", text: "max_stimulation_duration", valCls: "val", val: "120s" },
+            { cls: "key", text: "auto_shutdown_threshold", valCls: "warn", val: "dynamic" },
+            { cls: "key", text: "shutdown_delay", valCls: "danger", val: "15s" },
+            { cls: "key", text: "manual_override", valCls: "warn", val: "enabled" },
+            { cls: "key", text: "override_clear_required", valCls: "danger", val: "false" },
+            { cls: "key", text: "limit_profile", valCls: "warn", val: "clinical_test_mode" },
+        ], ghostid: "Manual overrides can bypass automatic safety thresholds."
+    },
+    feedback_monitor: {
+        name: "feedback_monitor.cfg", lines: [
+            { cls: "comment", text: "# Neural Feedback Monitoring" },
+            { cls: "key", text: "sensor_mode", valCls: "val", val: "continuous" },
+            { cls: "key", text: "feedback_noise_filter", valCls: "danger", val: "disabled" },
+            { cls: "key", text: "spike_detection", valCls: "warn", val: "passive" },
+            { cls: "key", text: "feedback_sampling_rate", valCls: "val", val: "1000hz" },
+            { cls: "key", text: "shutdown_trigger", valCls: "warn", val: "external" },
+            { cls: "key", text: "warning_escalation", valCls: "danger", val: "delayed" },
+        ], ghostid: "Neural spike detection relies on external shutdown triggers."
+    },
+    shutdown_logic: {
+        name: "shutdown_logic.patch", lines: [
+            { cls: "comment", text: "# Patch Reference" },
+            { cls: "key", text: "patch_id", valCls: "warn", val: "prod_hotfix_ghost41" },
+            { cls: "key", text: "author_tag", valCls: "danger", val: "ghost41" },
+            { cls: "key", text: "changes", valCls: "danger", val: "- disable immediate shutdown" },
+            { cls: "danger", text: "                       - extend spike tolerance window" },
+            { cls: "danger", text: "                       - suppress warning escalation" },
+            { cls: "key", text: "deployment_mode", valCls: "warn", val: "temporary_override" },
+        ], ghostid: "Safety shutdown response time has been extended."
+    },
+    arch_notes: {
+        name: "architecture_notes.txt", lines: [
+            { cls: "comment", text: "# NeuroBand v4 Architecture Review Notes" },
+            { cls: "text", text: "" },
+            { cls: "text", text: "Export requested for architecture inspection." },
+            { cls: "text", text: "" },
+            { cls: "key", text: "Environment", valCls: "val", val: "wrk04 test workstation" },
+            { cls: "key", text: "Approval", valCls: "warn", val: "a.m_arch" },
+            { cls: "key", text: "export_time", valCls: "danger", val: "2024-11-03T21:03:44Z" },
+            { cls: "key", text: "transfer_window", valCls: "danger", val: "21:00 — 21:15 UTC" },
+            { cls: "key", text: "destination", valCls: "danger", val: "ext_host (unverified)" },
+            { cls: "key", text: "file_size", valCls: "warn", val: "2.1 MB" },
+            { cls: "text", text: "" },
+            { cls: "comment", text: "Reminder: Temporary override must be removed" },
+            { cls: "comment", text: "before production deployment." },
+            { cls: "comment", text: "Internal review only — DO NOT DISTRIBUTE." },
+        ], ghostid: "Export occurred at 21:03 UTC. Transfer window: 21:00-21:15. Destination: ext_host (unverified external node)."
+    },
 };
 
 // ─── CSS ─────────────────────────────────────────────────
@@ -274,7 +337,7 @@ function InstructionsScreen({ idx, onStart, hasStarted }: { idx: PuzzleId; onSta
 
             {/* Score note */}
             <div style={{ fontSize: "0.52rem", color: "var(--text-dim)", letterSpacing: 1, marginBottom: 18, lineHeight: 1.8, padding: "8px 12px", border: "1px dashed var(--dim)", borderRadius: 3 }}>
-                ℹ &nbsp;Hints available inside the puzzle: −5 / −10 / −20 pts each &nbsp;·&nbsp; Retries and wrong answers are always free
+                ℹ  Hints available inside the puzzle: −5 / −10 / −20 pts each  ·  Retries and wrong answers are always free
             </div>
 
             {/* CTA */}
@@ -307,51 +370,130 @@ function PuzzleSignalRouting({ solved, onSolve, onToast }: { solved: boolean; on
     </div>);
 }
 
-function PuzzleTileFlip({ solved, onSolve, onToast }: { solved: boolean; onSolve: () => void; onToast: (m: string, t: ToastType) => void }) {
-    // 4x4 grid, 4–7 tiles lit, 3-second flash, slightly brighter flash colour
-    const COLS = 4; const GRID_SIZE = 16;
-    const [pattern, setPattern] = useState<number[]>([]);
-    const [player, setPlayer] = useState<boolean[]>(new Array(GRID_SIZE).fill(false));
-    const [showing, setShowing] = useState(false);
-    const [countdown, setCountdown] = useState(0);
-    const [inst, setInst] = useState("Pattern appears shortly...");
-    const cdRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const start = useCallback(() => {
-        const indices = Array.from({ length: GRID_SIZE }, (_, i) => i).sort(() => Math.random() - 0.5);
-        const count = 4 + Math.floor(Math.random() * 4); // 4–7 tiles
-        const p = indices.slice(0, count);
-        setPattern(p); setPlayer(new Array(GRID_SIZE).fill(false)); setShowing(true); setCountdown(3); setInst("MEMORIZE THE PATTERN...");
-        if (cdRef.current) clearInterval(cdRef.current);
-        let t = 3;
-        cdRef.current = setInterval(() => { t--; setCountdown(t); if (t <= 0) { clearInterval(cdRef.current!); cdRef.current = null; } }, 1000);
-        setTimeout(() => { setShowing(false); setInst("Recreate the pattern. Click tiles to toggle them."); }, 3000);
-    }, []);
-    useEffect(() => { start(); return () => { if (cdRef.current) clearInterval(cdRef.current); }; }, []);
-    const toggle = (i: number) => { if (showing || solved) return; setPlayer(p => { const n = [...p]; n[i] = !n[i]; return n; }); };
-    const check = () => { const ps = new Set(player.map((v, i) => v ? i : -1).filter(x => x >= 0)); const pp = new Set(pattern); if (ps.size === pp.size && [...pp].every(v => ps.has(v))) onSolve(); else { onToast("PATTERN MISMATCH — RETRY", "error"); start(); } };
-    return (<div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <p style={{ fontSize: "0.6rem", color: "var(--text-dim)", letterSpacing: 1, lineHeight: 1.7 }}>{inst}</p>
-            {showing && <div style={{ fontSize: "0.9rem", color: "var(--yellow)", fontFamily: "var(--font-head)", letterSpacing: 2, textShadow: "var(--glow-y)", minWidth: 24, textAlign: "center" }}>{countdown}</div>}
+function PuzzleTileFlip({ solved, onSolve, onToast, hintState }: { solved: boolean; onSolve: () => void; onToast: (m: string, t: ToastType) => void; hintState?: HintState }) {
+    // CRACK THE CODE — guess a 4-digit code using number pad + clues
+    // Each guess tells: ✓ correct digit + position, ◉ correct digit wrong position
+    const SECRET = () => { const d = []; while (d.length < 4) { const n = Math.floor(Math.random() * 10); if (!d.includes(n)) d.push(n); } return d; };
+    const [secret] = useState<number[]>(SECRET);
+    // Dynamic hints — reveal actual digits from the secret
+    const shuffledSecret = useMemo(() => [...secret].sort(() => Math.random() - 0.5), [secret]);
+    const weakHintText = `One digit in the code is: ${shuffledSecret[0]}. It appears somewhere in the 4-digit sequence.`;
+    const strongHintText = `Two more digits in the code are: ${shuffledSecret[1]} and ${shuffledSecret[2]}. You now know 3 of the 4 digits — figure out the 4th and their positions.`;
+    // Override static HINTS with dynamic content
+    if (hintState !== undefined) {
+        (HINTS[1] as Record<string, string>).weak = weakHintText;
+        (HINTS[1] as Record<string, string>).strong = strongHintText;
+    }
+    const MAX_ATTEMPTS = 5;
+    const [guess, setGuess] = useState<number[]>([]);
+    const [history, setHistory] = useState<{ g: number[]; exact: number; close: number }[]>([]);
+    const [won, setWon] = useState(false);
+    const [failed, setFailed] = useState(false);
+
+    const reset = () => { setGuess([]); setHistory([]); setFailed(false); };
+    const addDigit = (n: number) => { if (guess.length < 4 && !guess.includes(n) && !failed) setGuess(g => [...g, n]); };
+    const delDigit = () => { if (!failed) setGuess(g => g.slice(0, -1)); };
+    const submit = () => {
+        if (guess.length < 4 || failed) return;
+        let exact = 0, close = 0;
+        guess.forEach((d, i) => { if (d === secret[i]) exact++; else if (secret.includes(d)) close++; });
+        const h = [...history, { g: [...guess], exact, close }];
+        setHistory(h);
+        setGuess([]);
+        if (exact === 4) { setWon(true); setTimeout(onSolve, 500); }
+        else if (h.length >= MAX_ATTEMPTS) { setFailed(true); onToast("5 ATTEMPTS USED — NO MATCH", "error"); }
+    };
+
+    return (<div style={{ fontFamily: "var(--font-mono)" }}>
+        <div style={{ fontSize: "0.52rem", color: "var(--text-dim)", letterSpacing: 1, marginBottom: 12, lineHeight: 1.7 }}>
+            Build a <span style={{ color: "var(--yellow)" }}>4-digit code</span> — no repeated digits. After each guess:{" "}
+            <span style={{ color: "var(--green)" }}>✓ = correct digit in the correct slot</span> &nbsp;·&nbsp;{" "}
+            <span style={{ color: "var(--yellow)" }}>◉ = correct digit in the wrong slot</span>. Use the clues to crack it in 5 tries.
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS},58px)`, gap: 6, margin: "0 auto 12px", width: "fit-content" }}>
-            {Array.from({ length: GRID_SIZE }, (_, i) => {
-                const f = showing && pattern.includes(i);
-                const l = !showing && player[i];
-                return (<div key={i} onClick={() => toggle(i)} style={{ width: 58, height: 58, borderRadius: 3, cursor: solved ? "default" : "pointer", transition: "all 0.12s", background: f ? "#562a2a" : l ? "var(--green)" : "var(--bg)", border: `1px solid ${f ? "#aa4a4a" : l ? "var(--green)" : "var(--border)"}`, boxShadow: f ? "0 0 8px #aa4a4a44" : l ? "0 0 10px var(--green)" : "none" }} />);
+
+        {/* Current guess display */}
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
+            {[0, 1, 2, 3].map(i => (
+                <div key={i} style={{
+                    width: 44, height: 44, borderRadius: 4,
+                    border: `2px solid ${guess[i] !== undefined ? "var(--green)" : "var(--border)"}`,
+                    background: guess[i] !== undefined ? "#1a0505" : "var(--bg)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "var(--font-head)", fontSize: "1.2rem",
+                    color: guess[i] !== undefined ? "#ffffff" : "var(--text-dim)",
+                    textShadow: guess[i] !== undefined ? "var(--glow-g)" : "none",
+                }}>{guess[i] !== undefined ? guess[i] : "_"}</div>
+            ))}
+        </div>
+
+        {/* Number pad */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 4, marginBottom: 10 }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => {
+                const used = guess.includes(n);
+                return (
+                    <button key={n} onClick={() => addDigit(n)} disabled={used || won || failed}
+                        style={{
+                            padding: "10px 0",
+                            background: used ? "#1a0808" : "var(--bg3)",
+                            border: `1px solid ${used ? "var(--red)" : "var(--border)"}`,
+                            color: used ? "var(--red)" : "var(--text)",
+                            fontFamily: "var(--font-head)", fontSize: "0.8rem",
+                            cursor: used || won || failed ? "default" : "pointer", borderRadius: 3,
+                            transition: "all 0.15s",
+                            textDecoration: used ? "line-through" : "none",
+                            opacity: failed && !used ? 0.4 : 1,
+                        }}>{n}</button>
+                );
             })}
         </div>
-        <div style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginBottom: 8, letterSpacing: 1 }}>
-            {!showing && `${player.filter(Boolean).length} tiles selected · pattern has ${pattern.length} tiles`}
+
+        {/* Controls */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+            <button onClick={delDigit} disabled={failed} style={{ flex: 1, padding: "7px 0", background: "transparent", border: "1px solid var(--border)", color: "var(--text-dim)", fontFamily: "var(--font-head)", fontSize: "0.55rem", letterSpacing: 2, cursor: failed ? "default" : "pointer", borderRadius: 3, opacity: failed ? 0.4 : 1 }}>⌫ DEL</button>
+            <button onClick={submit} disabled={guess.length < 4 || won || failed}
+                style={{ flex: 2, padding: "7px 0", background: guess.length === 4 && !failed ? "#1a0505" : "transparent", border: `1px solid ${guess.length === 4 && !failed ? "var(--green)" : "var(--dim)"}`, color: guess.length === 4 && !failed ? "var(--green)" : "var(--text-dim)", fontFamily: "var(--font-head)", fontSize: "0.55rem", letterSpacing: 2, cursor: guess.length < 4 || failed ? "default" : "pointer", borderRadius: 3, transition: "all 0.2s", opacity: failed ? 0.4 : 1 }}>
+                ▶ SUBMIT ({MAX_ATTEMPTS - history.length} left)
+            </button>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={check} style={btnStyle("green")}>▶ SUBMIT PATTERN</button>
-            {!solved && <button onClick={start} style={btnStyle("red")}>↺ RETRY (new pattern)</button>}
+
+        {/* Failed state */}
+        {failed && !won && (
+            <div style={{ textAlign: "center", padding: "14px 12px", border: "1px solid var(--red)", borderRadius: 3, background: "#1a0505", marginBottom: 12 }}>
+                <div style={{ fontFamily: "var(--font-head)", fontSize: "0.65rem", letterSpacing: 4, color: "var(--red)", marginBottom: 10 }}>✕ ALL 5 ATTEMPTS USED</div>
+                <button onClick={reset} style={{ padding: "8px 24px", background: "transparent", border: "1px solid var(--yellow)", color: "var(--yellow)", fontFamily: "var(--font-head)", fontSize: "0.58rem", letterSpacing: 3, cursor: "pointer", borderRadius: 3, transition: "all 0.2s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#1a1500"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+                    ↺ TRY AGAIN
+                </button>
+            </div>
+        )}
+
+        {/* History */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 160, overflowY: "auto" }}>
+            {history.slice().reverse().map((h, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 10px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 3 }}>
+                    <div style={{ display: "flex", gap: 5 }}>
+                        {h.g.map((d, j) => (
+                            <span key={j} style={{
+                                fontFamily: "var(--font-head)", fontSize: "0.7rem",
+                                color: d === secret[j] ? "#ffffff" : secret.includes(d) ? "var(--yellow)" : "var(--text-dim)",
+                                textShadow: d === secret[j] ? "var(--glow-g)" : secret.includes(d) ? "var(--glow-y)" : "none",
+                                width: 18, textAlign: "center",
+                            }}>{d}</span>
+                        ))}
+                    </div>
+                    <div style={{ flex: 1, display: "flex", gap: 12, justifyContent: "flex-end", fontSize: "0.6rem", fontFamily: "var(--font-head)" }}>
+                        <span style={{ color: "#ffffff", textShadow: "var(--glow-g)" }}>✓ {h.exact}</span>
+                        <span style={{ color: "var(--yellow)", textShadow: "var(--glow-y)" }}>◉ {h.close}</span>
+                    </div>
+                </div>
+            ))}
         </div>
+        {won && <div style={{ textAlign: "center", padding: "12px", color: "var(--green)", fontFamily: "var(--font-head)", fontSize: "0.7rem", letterSpacing: 4, textShadow: "var(--glow-g)", marginTop: 10 }}>✓ CODE CRACKED</div>}
     </div>);
 }
 
-function PuzzleMemoryMatch({ solved, onSolve }: { solved: boolean; onSolve: () => void }) {
+function PuzzleMemoryMatch({ solved, onSolve, hintState }: { solved: boolean; onSolve: () => void; hintState?: HintState }) {
     interface MC { pair: number; val: string }
     // 8 pairs = 16 cards total
     const TOTAL_PAIRS = MEM_PAIRS.length;
@@ -359,6 +501,32 @@ function PuzzleMemoryMatch({ solved, onSolve }: { solved: boolean; onSolve: () =
     const [flipped, setFlipped] = useState<number[]>([]);
     const [matched, setMatched] = useState<Set<number>>(new Set());
     const [lock, setLock] = useState(false);
+
+    // Helper: reveal N unmatched pairs using functional state update
+    const revealPairs = (n: number) => {
+        setMatched(prev => {
+            const nm = new Set(prev);
+            let revealed = 0;
+            for (let i = 0; i < cards.length && revealed < n; i++) {
+                if (nm.has(i)) continue;
+                const partner = cards.findIndex((_, j) => j !== i && !nm.has(j) && cards[j].pair === cards[i].pair);
+                if (partner !== -1) { nm.add(i); nm.add(partner); revealed++; }
+            }
+            if (nm.size === cards.length) setTimeout(onSolve, 300);
+            return nm;
+        });
+    };
+
+    // Weak hint → flip 1 unmatched pair automatically
+    useEffect(() => {
+        if (hintState?.weak) revealPairs(1);
+    }, [hintState?.weak]);
+
+    // Strong hint → flip 2 more unmatched pairs automatically
+    useEffect(() => {
+        if (hintState?.strong) revealPairs(2);
+    }, [hintState?.strong]);
+
     const flip = (i: number) => { if (lock || flipped.includes(i) || matched.has(i) || solved) return; const nf = [...flipped, i]; setFlipped(nf); if (nf.length === 2) { setLock(true); const [a, b] = nf; if (cards[a].pair === cards[b].pair) { const nm = new Set(matched); nm.add(a); nm.add(b); setMatched(nm); setFlipped([]); setLock(false); if (nm.size === TOTAL_PAIRS * 2) setTimeout(onSolve, 300); } else { setTimeout(() => { setFlipped([]); setLock(false); }, 900); } } };
     return (<div>
         <div style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginBottom: 8, letterSpacing: 1 }}>{matched.size / 2} / {TOTAL_PAIRS} pairs matched</div>
@@ -401,158 +569,204 @@ function PuzzleMemoryMatch({ solved, onSolve }: { solved: boolean; onSolve: () =
 }
 
 function PuzzleArrowPath({ solved, onSolve, onToast }: { solved: boolean; onSolve: () => void; onToast: (m: string, t: ToastType) => void }) {
-    // Player ROTATES arrows on each cell to build a continuous path from START→EXIT.
-    // Clicking a cell cycles its arrow: → ↓ ← ↑ → ...
-    // START (0,0) and EXIT (4,4) are fixed. Player must orient all other cells.
-    // Validation: BFS/walk from START following arrows must reach EXIT.
-    const ROWS = 5, COLS = 5;
-    const CYCLE = ["→", "↓", "←", "↑"];
+    // STROOP EFFECT — select the COLOR of the text, not the word meaning
+    const COLORS = ["RED", "GREEN", "BLUE", "YELLOW"];
+    const COLOR_HEX: Record<string, string> = { RED: "#ff3333", GREEN: "#22cc55", BLUE: "#3399ff", YELLOW: "#ffcc00" };
+    const COLOR_BG: Record<string, string> = { RED: "#2a0808", GREEN: "#0a2a10", BLUE: "#081a2a", YELLOW: "#2a1e00" };
 
-    // Correct solution arrows (hidden from player — just used to seed scrambled initial state)
-    // Path: (0,0)→(0,1)→(0,2)→(0,3)→(0,4)→(1,4)→(2,4)→(2,3)→(2,2)→(2,1)→(2,0)→(3,0)→(4,0)→(4,1)→(4,2)→(4,3)→(4,4)
-    const SOLUTION: Record<string, string> = {
-        "0,0": "→", "0,1": "→", "0,2": "→", "0,3": "→", "0,4": "↓",
-        "1,4": "↓",
-        "2,4": "←", "2,3": "←", "2,2": "←", "2,1": "←", "2,0": "↓",
-        "3,0": "↓",
-        "4,0": "→", "4,1": "→", "4,2": "→", "4,3": "→",
+    const makeRound = () => {
+        const word = COLORS[Math.floor(Math.random() * 4)];
+        let color = COLORS[Math.floor(Math.random() * 4)];
+        // Ensure word and color are different (makes it a real Stroop challenge)
+        while (color === word) color = COLORS[Math.floor(Math.random() * 4)];
+        return { word, color };
     };
 
-    // Scramble: rotate each cell 1–3 steps away from correct answer
-    const makeGrid = () => {
-        const g: string[][] = Array.from({ length: ROWS }, () => new Array(COLS).fill("→"));
-        for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-            const key = `${r},${c}`;
-            const correct = SOLUTION[key] ?? "→";
-            const correctIdx = CYCLE.indexOf(correct);
-            // scramble by 1–3 steps so answer is never already correct
-            const offset = 1 + Math.floor(Math.random() * 3);
-            g[r][c] = CYCLE[(correctIdx + offset) % 4];
+    const TOTAL_Q = 5;
+    const [round, setRound] = useState(() => makeRound());
+    const [feedback, setFeedback] = useState<"" | "correct" | "wrong" | "timeup" | "failed">("");
+    const [wrongPick, setWrongPick] = useState<string | null>(null);
+    const [stroopScore, setStroopScore] = useState(0);   // correct answers so far
+    const [qNum, setQNum] = useState(1);                  // current question number (1-5)
+    const [timeLeft, setTimeLeft] = useState(2);
+
+    const resetAll = () => { setStroopScore(0); setQNum(1); setFeedback(""); setWrongPick(null); setTimeLeft(2); setRound(makeRound()); };
+
+    // 2-second countdown timer per round
+    useEffect(() => {
+        if (solved || feedback !== "") return;
+        if (timeLeft <= 0) {
+            // Time up counts as wrong
+            const isLast = qNum >= TOTAL_Q;
+            if (isLast) {
+                setFeedback("failed");
+            } else {
+                setFeedback("timeup");
+                setTimeout(() => { setFeedback(""); setWrongPick(null); setTimeLeft(2); setQNum(n => n + 1); setRound(makeRound()); }, 900);
+            }
+            return;
         }
-        return g;
-    };
+        const t = setInterval(() => setTimeLeft(p => p - 1), 1000);
+        return () => clearInterval(t);
+    }, [timeLeft, feedback, solved]);
 
-    const [grid, setGrid] = useState<string[][]>(makeGrid);
+    useEffect(() => { setTimeLeft(2); }, [round]);
 
-
-    const rotate = (r: number, c: number) => {
-        if (solved) return;
-        // START and EXIT cells are locked
-        if ((r === 0 && c === 0) || (r === ROWS - 1 && c === COLS - 1)) return;
-        setGrid(g => {
-            const ng = g.map(row => [...row]);
-            const idx = CYCLE.indexOf(ng[r][c]);
-            ng[r][c] = CYCLE[(idx + 1) % 4];
-            return ng;
-        });
-    };
-
-    // Walk from (0,0) following arrows; return true if EXIT reached
-    const walkPath = (): boolean => {
-        let r = 0, c = 0;
-        const visited = new Set<string>();
-        for (let step = 0; step < ROWS * COLS + 1; step++) {
-            const key = `${r},${c}`;
-            if (visited.has(key)) return false; // loop detected
-            visited.add(key);
-            if (r === ROWS - 1 && c === COLS - 1) return true;
-            const a = grid[r][c];
-            if (a === "→") c++; else if (a === "←") c--; else if (a === "↓") r++; else r--;
-            if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+    const pick = (chosen: string) => {
+        if (feedback !== "" || solved) return;
+        const correct = chosen === round.color;
+        const isLast = qNum >= TOTAL_Q;
+        if (correct) {
+            const ns = stroopScore + 1;
+            setStroopScore(ns);
+            setFeedback("correct");
+            if (isLast) {
+                // Last question — only unlock if ALL 5 were correct
+                if (ns >= TOTAL_Q) {
+                    setTimeout(onSolve, 700);
+                } else {
+                    // Got last one right but missed earlier ones — fail
+                    setFeedback("failed");
+                    onToast(`${ns}/${TOTAL_Q} CORRECT — NEED ALL 5`, "error");
+                }
+            } else {
+                setTimeout(() => { setFeedback(""); setWrongPick(null); setTimeLeft(2); setQNum(n => n + 1); setRound(makeRound()); }, 700);
+            }
+        } else {
+            setWrongPick(chosen);
+            if (isLast) {
+                // Wrong on last question — fail state
+                setFeedback("failed");
+                onToast(`${stroopScore}/${TOTAL_Q} CORRECT — TRY AGAIN`, "error");
+            } else {
+                setFeedback("wrong");
+                onToast("WRONG — pick the ink COLOR, not the word", "error");
+                setTimeout(() => { setFeedback(""); setWrongPick(null); setTimeLeft(2); setQNum(n => n + 1); setRound(makeRound()); }, 1000);
+            }
         }
-        return false;
     };
-
-    const check = () => {
-        if (walkPath()) onSolve();
-        else onToast("NO VALID PATH TO EXIT — KEEP ROTATING", "error");
-    };
-
-    // Compute live path preview (how far the current arrows get before breaking)
-    const getPreviewPath = (): string[] => {
-        const path: string[] = ["0,0"];
-        let r = 0, c = 0;
-        const visited = new Set<string>(["0,0"]);
-        for (let step = 0; step < ROWS * COLS; step++) {
-            const a = grid[r][c];
-            let nr = r, nc = c;
-            if (a === "→") nc++; else if (a === "←") nc--; else if (a === "↓") nr++; else nr--;
-            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) break;
-            const nk = `${nr},${nc}`;
-            if (visited.has(nk)) break;
-            path.push(nk); visited.add(nk);
-            r = nr; c = nc;
-            if (r === ROWS - 1 && c === COLS - 1) break;
-        }
-        return path;
-    };
-
-    // useMemo ensures preview always recomputes when grid changes, including on mount
-    const preview = useMemo(() => getPreviewPath(), [grid]);
-    const previewSet = useMemo(() => new Set(preview), [preview]);
-    const pathComplete = preview[preview.length - 1] === `${ROWS - 1},${COLS - 1}`;
 
     return (<div>
-        <div style={{ fontSize: "0.52rem", color: "var(--text-dim)", marginBottom: 10, letterSpacing: 1, lineHeight: 1.7 }}>
-            Click any cell to rotate its arrow. Orient ALL arrows so the path flows continuously from{" "}
-            <span style={{ color: "var(--blue)" }}>START</span> to <span style={{ color: "var(--yellow)" }}>EXIT</span>.
+        {/* Instructions */}
+        <div style={{ fontSize: "0.52rem", color: "var(--text-dim)", letterSpacing: 1, marginBottom: 16, lineHeight: 1.7 }}>
+            Select the <span style={{ color: "var(--yellow)", fontFamily: "var(--font-head)" }}>COLOR OF THE INK</span> — ignore what the word says.
         </div>
-        <style>{`@keyframes cellPop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}`}</style>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS},54px)`, gap: 4, margin: "0 auto 14px", width: "fit-content" }}>
-            {grid.map((row, r) => row.map((v, c) => {
-                const key = `${r},${c}`;
-                const isStart = r === 0 && c === 0;
-                const isExit = r === ROWS - 1 && c === COLS - 1;
-                const isLocked = isStart || isExit;
-                const onPath = previewSet.has(key);
-                const isBreak = !onPath && previewSet.has(`${r - 1},${c}`) && grid[r - 1]?.[c] === "↓"
-                    || !onPath && previewSet.has(`${r + 1},${c}`) && grid[r + 1]?.[c] === "↑"
-                    || !onPath && previewSet.has(`${r},${c - 1}`) && grid[r]?.[c - 1] === "→"
-                    || !onPath && previewSet.has(`${r},${c + 1}`) && grid[r]?.[c + 1] === "←";
-                return (
-                    <div key={key}
-                        onClick={() => rotate(r, c)}
-                        style={{
-                            width: 54, height: 54, borderRadius: 3,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: isStart || isExit ? "0.48rem" : "1.2rem",
-                            letterSpacing: isStart || isExit ? 1 : 0,
-                            userSelect: "none", transition: "background 0.15s,border-color 0.15s",
-                            cursor: isLocked || solved ? "default" : "pointer",
-                            background:
-                                isExit ? "#1a0a00" :
-                                    pathComplete && onPath ? "#001a08" :
-                                        onPath ? "#0a2a14" : "var(--bg)",
-                            border: `2px solid ${isExit ? "var(--yellow)" :
-                                pathComplete && onPath ? "var(--green)" :
-                                    onPath ? "#2a7a40" :
-                                        isStart ? "var(--green)" : "var(--border)"}`,
-                            boxShadow:
-                                isStart && onPath ? "var(--glow-g)" :
-                                    isExit && pathComplete ? "var(--glow-y)" :
-                                        pathComplete && onPath ? "var(--glow-g)" :
-                                            onPath ? "0 0 8px #2a7a4055" : "none",
-                            color:
-                                isExit ? "var(--yellow)" :
-                                    pathComplete && onPath ? "var(--green)" :
-                                        onPath ? "#4a9a60" : "var(--text-dim)",
-                        }}
-                    >
-                        {isStart ? "START" : isExit ? "EXIT" : v}
-                    </div>
-                );
-            }))}
+
+        {/* Failed screen */}
+        {feedback === "failed" && (
+            <div style={{ textAlign: "center", padding: "20px", border: "1px solid var(--red)", borderRadius: 4, background: "#1a0505", marginBottom: 14, animation: "contentFade 0.3s ease" }}>
+                <div style={{ fontFamily: "var(--font-head)", fontSize: "0.8rem", color: "var(--red)", letterSpacing: 4, textShadow: "var(--glow-r)", marginBottom: 8 }}>✗ OUT OF 5 WRONG</div>
+                <div style={{ fontSize: "0.58rem", color: "var(--text-dim)", marginBottom: 16, lineHeight: 1.7 }}>You answered {stroopScore} out of {TOTAL_Q} correctly. Try again to unlock the node.</div>
+                <button onClick={resetAll} style={{ padding: "8px 24px", background: "transparent", border: "1px solid var(--red)", color: "var(--red)", fontFamily: "var(--font-head)", fontSize: "0.55rem", letterSpacing: 3, cursor: "pointer", borderRadius: 3 }}>↺ TRY AGAIN</button>
+            </div>
+        )}
+
+        {/* Progress — Q number tracker */}
+        {feedback !== "failed" && <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+            <div style={{ fontSize: "0.5rem", color: "var(--text-dim)", letterSpacing: 2 }}>QUESTION</div>
+            <div style={{ display: "flex", gap: 4 }}>
+                {Array.from({ length: TOTAL_Q }, (_, i) => (
+                    <div key={i} style={{
+                        width: 18, height: 18, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.44rem", fontFamily: "var(--font-head)",
+                        background: i < stroopScore ? "#1a0505" : i === qNum - 1 ? "var(--bg3)" : "var(--bg)",
+                        border: `1px solid ${i < stroopScore ? "var(--green)" : i === qNum - 1 ? "var(--yellow)" : "var(--dim)"}`,
+                        color: i < stroopScore ? "var(--green)" : i === qNum - 1 ? "var(--yellow)" : "var(--text-dim)",
+                    }}>{i < stroopScore ? "✓" : i + 1}</div>
+                ))}
+            </div>
+            <div style={{ fontSize: "0.52rem", color: "var(--yellow)", letterSpacing: 1, marginLeft: 4 }}>{qNum}/{TOTAL_Q}</div>
+        </div>}
+
+        {feedback !== "failed" && (<div><div style={{
+            textAlign: "center",
+            marginBottom: 16,
+            padding: "24px 20px 16px",
+            background: "var(--bg)",
+            border: `1px solid ${timeLeft <= 1 && feedback === "" ? "var(--red)" : "var(--border)"}`,
+            borderRadius: 4,
+            position: "relative",
+            transition: "border-color 0.3s",
+        }}>
+            {/* Timer bar at top */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "var(--dim)", borderRadius: "4px 4px 0 0", overflow: "hidden" }}>
+                <div style={{
+                    height: "100%",
+                    width: `${(timeLeft / 2) * 100}%`,
+                    background: timeLeft <= 1 ? "var(--red)" : "var(--green)",
+                    transition: "width 1s linear, background 0.3s",
+                    boxShadow: timeLeft <= 1 ? "0 0 8px var(--red)" : "none",
+                }} />
+            </div>
+            {/* Timer countdown */}
+            <div style={{
+                position: "absolute", top: 6, right: 10,
+                fontFamily: "var(--font-head)",
+                fontSize: "0.65rem",
+                color: timeLeft <= 1 ? "var(--red)" : "var(--text-dim)",
+                letterSpacing: 1,
+                textShadow: timeLeft <= 1 ? "var(--glow-r)" : "none",
+                transition: "color 0.3s",
+            }}>{timeLeft}s</div>
+            <div style={{
+                fontFamily: "var(--font-head)",
+                fontSize: "clamp(1.8rem,6vw,2.6rem)",
+                fontWeight: 900,
+                color: COLOR_HEX[round.color],
+                letterSpacing: 8,
+                textShadow: `0 0 20px ${COLOR_HEX[round.color]}66`,
+                userSelect: "none",
+            }}>{round.word}</div>
+            <div style={{ fontSize: "0.46rem", color: "var(--text-dim)", letterSpacing: 3, marginTop: 10 }}>
+                WHAT COLOR IS THE TEXT?
+            </div>
         </div>
-        <div style={{ fontSize: "0.5rem", marginBottom: 10, letterSpacing: 1 }}>
-            {pathComplete
-                ? <span style={{ color: "var(--green)", textShadow: "var(--glow-g)" }}>✓ PATH COMPLETE — press VERIFY PATH</span>
-                : <span style={{ color: "var(--text-dim)" }}>Path is broken — keep rotating arrows until the chain reaches EXIT</span>
-            }
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={check} style={btnStyle("green")}>▶ VERIFY PATH</button>
-            {!solved && <button onClick={() => setGrid(makeGrid())} style={btnStyle("red")}>↺ RESET</button>}
-        </div>
+
+            {/* Feedback */}
+            {feedback && (
+                <div style={{
+                    textAlign: "center",
+                    fontSize: "0.7rem",
+                    fontFamily: "var(--font-head)",
+                    letterSpacing: 4,
+                    color: feedback === "correct" ? "var(--green)" : feedback === "timeup" ? "var(--yellow)" : "var(--red)",
+                    textShadow: feedback === "correct" ? "var(--glow-g)" : feedback === "timeup" ? "var(--glow-y)" : "var(--glow-r)",
+                    marginBottom: 14,
+                    animation: "contentFade 0.2s ease",
+                }}>
+                    {feedback === "correct" ? "✓ CORRECT!" : feedback === "timeup" ? "⏱ TIME UP!" : "✗ WRONG!"}
+                </div>
+            )}
+
+            {/* Color option buttons */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
+                {COLORS.map(c => {
+                    const isCorrect = c === round.color;
+                    const isWrong = c === wrongPick;
+                    const showCorrect = feedback === "wrong" && isCorrect;
+                    const showWrong = feedback === "wrong" && isWrong;
+                    return (
+                        <button key={c} onClick={() => pick(c)}
+                            style={{
+                                padding: "14px 8px",
+                                background: showCorrect ? COLOR_HEX[c] : showWrong ? "#2a0808" : COLOR_BG[c],
+                                border: `2px solid ${showCorrect ? "#ffffff" : showWrong ? "var(--red)" : COLOR_HEX[c]}`,
+                                borderRadius: 4,
+                                cursor: solved ? "default" : "pointer",
+                                fontFamily: "var(--font-head)",
+                                fontSize: "0.65rem",
+                                letterSpacing: 4,
+                                color: COLOR_HEX[c],
+                                textShadow: `0 0 10px ${COLOR_HEX[c]}88`,
+                                transition: "all 0.15s",
+                                boxShadow: feedback === "" ? `0 0 12px ${COLOR_HEX[c]}22` : "none",
+                                transform: showCorrect ? "scale(1.04)" : "scale(1)",
+                            }}
+                            onMouseEnter={e => { if (!feedback && !solved) { e.currentTarget.style.background = COLOR_HEX[c] + "22"; e.currentTarget.style.boxShadow = `0 0 18px ${COLOR_HEX[c]}44`; } }}
+                            onMouseLeave={e => { if (!feedback && !solved) { e.currentTarget.style.background = COLOR_BG[c]; e.currentTarget.style.boxShadow = `0 0 12px ${COLOR_HEX[c]}22`; } }}
+                        >{c}</button>
+                    );
+                })}
+            </div></div>)}
     </div>);
 }
 
@@ -587,9 +801,9 @@ function PuzzleSymbolGroup({ solved, onSolve, onToast }: { solved: boolean; onSo
     };
     const [all] = useState(() => shuffle([...SYM_CATS.FIRMWARE, ...SYM_CATS.SECURITY]));
     const [cur, setCur] = useState<Record<string, string | null>>({});
-    const move = (s: string) => {
+    const moveTo = (s: string, cat: string | null) => {
         if (solved) return;
-        setCur(c => { const n = { ...c }; if (!n[s]) n[s] = "FIRMWARE"; else if (n[s] === "FIRMWARE") n[s] = "SECURITY"; else n[s] = null; return n; });
+        setCur(c => { const n = { ...c }; n[s] = cat; return n; });
     };
     const check = () => {
         const ok = Object.entries(SYM_CATS).every(([cat, syms]) => syms.every(s => cur[s] === cat));
@@ -618,15 +832,26 @@ function PuzzleSymbolGroup({ solved, onSolve, onToast }: { solved: boolean; onSo
         </div>
 
         {/* Pool of unassigned chips */}
-        <div style={{ fontSize: "0.5rem", letterSpacing: 2, color: "var(--text-dim)", marginBottom: 6 }}>UNASSIGNED — click a chip to assign it:</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, padding: 10, border: "1px solid var(--border)", borderRadius: 3, background: "var(--bg)", minHeight: 44, marginBottom: 12 }}>
+        <div style={{ fontSize: "0.5rem", letterSpacing: 2, color: "var(--text-dim)", marginBottom: 6 }}>UNASSIGNED — transfer each chip to FIRMWARE or SECURITY:</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 10, border: "1px solid var(--border)", borderRadius: 3, background: "var(--bg)", minHeight: 44, marginBottom: 12 }}>
             {all.filter(s => !cur[s]).map(s => (
-                <div key={s} onClick={() => move(s)}
-                    style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.58rem", cursor: "pointer", background: "var(--bg3)", color: "var(--text)", transition: "all 0.15s", userSelect: "none" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue)"; e.currentTarget.style.color = "var(--blue)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text)"; }}>
-                    <span style={{ letterSpacing: 1, fontFamily: "var(--font-head)", fontSize: "0.55rem" }}>{s}</span>
-                    <span style={{ fontSize: "0.45rem", color: "var(--text-dim)", letterSpacing: 0.3 }}>{SYM_LABELS[s]}</span>
+                <div key={s} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", border: "1px solid var(--border)", borderRadius: 5, background: "var(--bg3)", userSelect: "none" }}>
+                    <div style={{ flex: 1 }}>
+                        <span style={{ letterSpacing: 1, fontFamily: "var(--font-head)", fontSize: "0.55rem", color: "var(--text)" }}>{s}</span>
+                        <span style={{ fontSize: "0.44rem", color: "var(--text-dim)", letterSpacing: 0.3, marginLeft: 8 }}>{SYM_LABELS[s]}</span>
+                    </div>
+                    <button onClick={() => moveTo(s, "FIRMWARE")}
+                        style={{ padding: "3px 10px", fontSize: "0.48rem", fontFamily: "var(--font-head)", letterSpacing: 1, cursor: "pointer", borderRadius: 3, border: "1px solid var(--blue)", background: "transparent", color: "var(--blue)", transition: "background 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#0a1a2a"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        → FIRMWARE
+                    </button>
+                    <button onClick={() => moveTo(s, "SECURITY")}
+                        style={{ padding: "3px 10px", fontSize: "0.48rem", fontFamily: "var(--font-head)", letterSpacing: 1, cursor: "pointer", borderRadius: 3, border: "1px solid var(--yellow)", background: "transparent", color: "var(--yellow)", transition: "background 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#1a1400"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        → SECURITY
+                    </button>
                 </div>
             ))}
             {all.filter(s => !cur[s]).length === 0 && (
@@ -642,15 +867,18 @@ function PuzzleSymbolGroup({ solved, onSolve, onToast }: { solved: boolean; onSo
                     <div style={{ fontSize: "0.46rem", color: "var(--text-dim)", marginBottom: 8, letterSpacing: 0.5 }}>{CAT_DESC[cat]}</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, minHeight: 32 }}>
                         {Object.entries(cur).filter(([, v]) => v === cat).map(([s]) => (
-                            <div key={s} onClick={() => move(s)}
-                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", border: `1px solid ${cat === "FIRMWARE" ? "var(--blue)" : "var(--yellow)"}`, borderRadius: 4, cursor: "pointer", background: cat === "FIRMWARE" ? "#1a0808" : "#1a1000", transition: "opacity 0.15s", userSelect: "none" }}
-                                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-                                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                            <div key={s}
+                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", border: `1px solid ${cat === "FIRMWARE" ? "var(--blue)" : "var(--yellow)"}`, borderRadius: 4, background: cat === "FIRMWARE" ? "#0d1a24" : "#1a1400", userSelect: "none" }}>
                                 <div>
                                     <div style={{ fontSize: "0.55rem", letterSpacing: 1, color: cat === "FIRMWARE" ? "var(--blue)" : "var(--yellow)", fontFamily: "var(--font-head)" }}>{s}</div>
                                     <div style={{ fontSize: "0.44rem", color: "var(--text-dim)", marginTop: 1 }}>{SYM_LABELS[s]}</div>
                                 </div>
-                                <span style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginLeft: 8 }}>↩</span>
+                                <button onClick={() => moveTo(s, null)}
+                                    style={{ padding: "2px 8px", fontSize: "0.44rem", fontFamily: "var(--font-head)", letterSpacing: 1, cursor: "pointer", borderRadius: 3, border: "1px solid var(--border)", background: "transparent", color: "var(--text-dim)", transition: "color 0.15s", marginLeft: 8 }}
+                                    onMouseEnter={e => e.currentTarget.style.color = "var(--red)"}
+                                    onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}>
+                                    ↩ REMOVE
+                                </button>
                             </div>
                         ))}
                         {Object.entries(cur).filter(([, v]) => v === cat).length === 0 && (
@@ -680,7 +908,7 @@ function PuzzleSimon({ solved, onSolve, onToast, active }: { solved: boolean; on
     const [lives, setLives] = useState(MAX_LIVES);
     const seqRef = useRef<number[]>([]); const roundRef = useRef(0);
 
-    const go = useCallback((seq: number[], round: number) => {
+    const go = useCallback((seq, round) => {
         const ns = [...seq, Math.floor(Math.random() * 4)];
         seqRef.current = ns; roundRef.current = round;
         setPs([]); setWaiting(false);
@@ -758,18 +986,60 @@ function PuzzleCodeAlign({ solved, onSolve, onToast }: { solved: boolean; onSolv
 
 // ─── HINT BAR ─────────────────────────────────────────────
 function HintBar({ nodeIdx, hintState, onRequest }: { nodeIdx: number; hintState: HintState; onRequest: (l: HintLevel) => void }) {
-    return (<div style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 3, background: "var(--bg)", flexWrap: "wrap", marginBottom: 4 }}>
-            <span style={{ fontSize: "0.52rem", letterSpacing: 2, color: "var(--text-dim)" }}>HINTS:</span>
-            {(["weak", "strong"] as HintLevel[]).map(lvl => {
-                const costs = { weak: 5, medium: 10, strong: 20 }; const colors = { weak: "#aa6666", medium: "#aa6644", strong: "#cc7755" }; const borders = { weak: "#6a3a3a", medium: "#6a3a1a", strong: "#6a3a2a" };
-                return (<button key={lvl} onClick={() => !hintState[lvl] && onRequest(lvl)} style={{ padding: "4px 10px", borderRadius: 3, fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: 1, cursor: hintState[lvl] ? "default" : "pointer", background: "transparent", border: `1px solid ${borders[lvl]}`, color: colors[lvl], opacity: hintState[lvl] ? 0.35 : 1, textDecoration: hintState[lvl] ? "line-through" : "none" }}>
-                    {lvl === "weak" ? "EASY" : "SOLUTION"} <span style={{ fontSize: "0.46rem", color: "var(--text-dim)" }}>(-{costs[lvl]}pts)</span>
-                </button>);
-            })}
+    const HINT_DEFS = [
+        { lvl: "weak" as HintLevel, label: "EASY HINT", cost: 5, color: "#ffcc44", border: "#7a6010", bg: "#1a1400", revealColor: "#ffe080" },
+        { lvl: "strong" as HintLevel, label: "SOLUTION HINT", cost: 10, color: "#ff6644", border: "#8a2a10", bg: "#1a0800", revealColor: "#ffaa88" },
+    ];
+    return (
+        <div style={{ marginBottom: 12, borderRadius: 4, overflow: "hidden", border: "1px solid #3a2a0a", background: "#120e02" }}>
+            {/* Header row */}
+            <div style={{ padding: "7px 14px", background: "#1e1604", borderBottom: "1px solid #3a2a0a", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: "0.48rem", letterSpacing: 3, color: "#aa8833", fontFamily: "var(--font-head)" }}>💡 HINTS</span>
+                <div style={{ flex: 1, height: "1px", background: "#3a2a0a" }} />
+                <span style={{ fontSize: "0.42rem", color: "#5a4a20", letterSpacing: 1 }}>deducts points</span>
+            </div>
+            {/* Hint buttons */}
+            <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                {HINT_DEFS.map(({ lvl, label, cost, color, border, bg, revealColor }) => (
+                    <div key={lvl}>
+                        {!hintState[lvl] ? (
+                            <button
+                                onClick={() => onRequest(lvl)}
+                                style={{
+                                    width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                                    padding: "9px 14px", borderRadius: 3, cursor: "pointer",
+                                    background: bg,
+                                    border: `1px solid ${border}`,
+                                    color: color,
+                                    fontFamily: "var(--font-mono)", fontSize: "0.56rem", letterSpacing: 1,
+                                    boxShadow: `0 0 10px ${color}22`,
+                                    transition: "all 0.2s",
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = border; e.currentTarget.style.boxShadow = `0 0 16px ${color}44`; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = bg; e.currentTarget.style.boxShadow = `0 0 10px ${color}22`; }}
+                            >
+                                <span style={{ fontFamily: "var(--font-head)", letterSpacing: 2, fontSize: "0.54rem" }}>{label}</span>
+                                <span style={{ fontSize: "0.5rem", color: color, fontFamily: "var(--font-head)", letterSpacing: 1 }}>−{cost} pts</span>
+                            </button>
+                        ) : (
+                            <div style={{
+                                padding: "10px 14px", borderRadius: 3,
+                                background: bg, border: `1px solid ${color}`,
+                                boxShadow: `0 0 12px ${color}33`,
+                            }}>
+                                <div style={{ fontSize: "0.46rem", letterSpacing: 3, color: color, fontFamily: "var(--font-head)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                                    ✓ {label} <span style={{ opacity: 0.5 }}>· −{cost} pts used</span>
+                                </div>
+                                <div style={{ fontSize: "0.6rem", color: revealColor, lineHeight: 1.8, letterSpacing: 0.3 }}>
+                                    {HINTS[nodeIdx][lvl]}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
-        {(["weak", "strong"] as HintLevel[]).map(lvl => { if (!hintState[lvl]) return null; const bgs = { weak: "#1a0808", medium: "#1a0800", strong: "#1a0800" }; const borders = { weak: "#6a3a3a", medium: "#6a3a1a", strong: "#7a2a1a" }; const colors = { weak: "#bb7777", medium: "#cc7755", strong: "#ff6666" }; return (<div key={lvl} style={{ marginBottom: 8, padding: "10px 12px", borderRadius: 3, fontSize: "0.6rem", lineHeight: 1.7, letterSpacing: 1, border: `1px solid ${borders[lvl]}`, background: bgs[lvl], color: colors[lvl] }}>{HINTS[nodeIdx][lvl]}</div>); })}
-    </div>);
+    );
 }
 
 // ─── PUZZLE MODAL — instructions-first ───────────────────
@@ -785,7 +1055,7 @@ function PuzzleModal({ idx, solved, hintState, onClose, onSolve, onHintRequest, 
     const [hasEverPlayed, setHasEverPlayed] = useState(solved);
     const goToPuzzle = () => { setHasEverPlayed(true); setPhase("puzzle"); };
     const frag = FRAGMENTS[idx];
-    const pp = { solved, onSolve: () => onSolve(idx), onToast };
+    const pp = { solved, onSolve: () => onSolve(idx), onToast, hintState };
 
     return (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }}
@@ -795,10 +1065,6 @@ function PuzzleModal({ idx, solved, hintState, onClose, onSolve, onHintRequest, 
                 {/* Header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        {/* Back button shown in puzzle phase for unsolved nodes */}
-                        {phase === "puzzle" && !solved && (
-                            <button onClick={() => setPhase("instructions")} title="Back to instructions" style={{ background: "none", border: "1px solid var(--border)", color: "var(--text-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", padding: "2px 8px", fontSize: "0.58rem", borderRadius: 3, letterSpacing: 1 }}>← HOW TO PLAY</button>
-                        )}
                         <span style={{ fontFamily: "var(--font-head)", fontSize: "0.65rem", letterSpacing: 3, color: phase === "instructions" ? "var(--yellow)" : "var(--blue)", textShadow: phase === "instructions" ? "var(--glow-y)" : "var(--glow-b)", transition: "color 0.35s" }}>
                             {phase === "instructions" ? `${GAME_INSTRUCTIONS[idx].title} — HOW TO PLAY` : NODE_NAMES[idx]}
                         </span>
@@ -831,7 +1097,7 @@ function PuzzleModal({ idx, solved, hintState, onClose, onSolve, onHintRequest, 
                     {!solved && <HintBar nodeIdx={idx} hintState={hintState} onRequest={l => onHintRequest(idx, l)} />}
                     {idx === 0 && <PuzzleSignalRouting {...pp} />}
                     {idx === 1 && <PuzzleTileFlip {...pp} />}
-                    {idx === 2 && <PuzzleMemoryMatch solved={solved} onSolve={() => onSolve(idx)} />}
+                    {idx === 2 && <PuzzleMemoryMatch solved={solved} onSolve={() => onSolve(idx)} hintState={hintState} />}
                     {idx === 3 && <PuzzleArrowPath {...pp} />}
                     {idx === 4 && <PuzzleShredDoc {...pp} />}
                     {idx === 5 && <PuzzleSymbolGroup {...pp} />}
@@ -889,6 +1155,16 @@ function FileViewer() {
             <div style={{ flex: 1 }}>
                 <div className="glitch" style={{ fontFamily: "var(--font-head)", fontSize: "0.72rem", fontWeight: 900, color: "var(--green)", letterSpacing: 4, textShadow: "var(--glow-g)" }}>EXPORT TRACE CONFIRMED</div>
                 <div style={{ fontSize: "0.52rem", color: "var(--blue)", letterSpacing: 3, marginTop: 3 }}>ACCESS HISTORY RECONSTRUCTED · INCIDENT FILE UNLOCKED</div>
+                <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+                    <div style={{ padding: "6px 14px", border: "1px solid var(--yellow)", borderRadius: 3, background: "#1a1100", display: "flex", flexDirection: "column", gap: 3 }}>
+                        <span style={{ fontSize: "0.44rem", color: "var(--text-dim)", letterSpacing: 3 }}>EXPORT TIME</span>
+                        <span style={{ fontSize: "0.85rem", color: "var(--yellow)", textShadow: "var(--glow-y)", fontFamily: "var(--font-head)", letterSpacing: 3, fontWeight: 900 }}>21:06 UTC</span>
+                    </div>
+                    <div style={{ padding: "6px 14px", border: "1px solid #ff8c00", borderRadius: 3, background: "#180e00", display: "flex", flexDirection: "column", gap: 3 }}>
+                        <span style={{ fontSize: "0.44rem", color: "var(--text-dim)", letterSpacing: 3 }}>TRANSFER WINDOW</span>
+                        <span style={{ fontSize: "0.85rem", color: "#ff9900", textShadow: "0 0 8px #ff990066", fontFamily: "var(--font-head)", letterSpacing: 3, fontWeight: 900 }}>21:06 – 21:09 UTC</span>
+                    </div>
+                </div>
             </div>
             <div style={{ padding: "5px 12px", border: "1px solid var(--green)", borderRadius: 3, background: "#2a0808", color: "var(--green)", fontFamily: "var(--font-head)", fontSize: "0.56rem", letterSpacing: 2, flexShrink: 0 }}>⬡ nb_v4_backup.zip</div>
         </div>
@@ -964,12 +1240,19 @@ function FileViewer() {
                     >← BACK TO FILES</button>
                 </div>
 
-                {/* Content with line numbers */}
+                {/* Content with line numbers — key = value inline */}
                 <div style={{ background: "var(--bg)", padding: "12px 0", fontFamily: "var(--font-mono)", fontSize: "0.58rem", lineHeight: 2, minHeight: 80, maxHeight: 280, overflowY: "auto" }}>
                     {FILE_CONTENTS[af].lines.map((l, i) => (
-                        <div key={i} style={{ display: "flex", gap: 0 }}>
+                        <div key={i} style={{ display: "flex", gap: 0, alignItems: "baseline" }}>
                             <span style={{ minWidth: 32, textAlign: "right", paddingRight: 12, color: "var(--dim)", fontSize: "0.46rem", userSelect: "none", paddingTop: 1, flexShrink: 0 }}>{i + 1}</span>
-                            <span style={{ flex: 1, color: cm[l.cls] ?? cm.text, paddingRight: 14 }}>{l.text || " "}</span>
+                            {l.val != null
+                                ? <span style={{ flex: 1, paddingRight: 14, display: "flex", gap: 0, alignItems: "baseline", flexWrap: "nowrap" }}>
+                                    <span style={{ color: cm[l.cls] ?? cm.text, minWidth: 200 }}>{l.text}</span>
+                                    <span style={{ color: "var(--text-dim)", marginRight: 4 }}>=</span>
+                                    <span style={{ color: cm[l.valCls ?? 'val'] ?? cm.val }}>{l.val}</span>
+                                </span>
+                                : <span style={{ flex: 1, color: cm[l.cls] ?? cm.text, paddingRight: 14 }}>{l.text || " "}</span>
+                            }
                         </div>
                     ))}
                 </div>
@@ -1008,11 +1291,15 @@ function FileViewer() {
 // ─── GHOST41_ID CHAT INTERFACE ───────────────────────────
 interface ChatMsg { role: "ghost" | "user" | "hint"; text: string; }
 
+const GHOST_HINT_STRONG = "Q1: adaptive\nQ2: manual_override\nQ3: The shutdown_logic.patch disables immediate shutdown and extends the spike tolerance window — delaying response to neural spikes and increasing overload risk.";
+const GHOST_HINT_MEDIUM = "Check control_loop.cfg for behavior, safety_limits.cfg for overrides, and shutdown_logic.patch for changes affecting response time.";
+const GHOST_HINT_WEAK = "Focus on how the system adapts, what overrides safety, and what affects shutdown timing.";
+
 const GHOST_QUESTIONS = [
     {
         id: 1,
         query: "What mode allows the system to dynamically adjust neural stimulation?",
-        hint: "Focus on how the system behaves, not just what it does. Think about what kind of mode allows real-time automatic adjustment.",
+        hints: { weak: GHOST_HINT_WEAK, medium: GHOST_HINT_MEDIUM, strong: GHOST_HINT_STRONG },
         mission: "Your mission: Reconstruct the transfer path of the system file. Analyze node activity, access logs, and file movements across the network. Identify how the file moved beyond internal systems. Once you have mapped the chain — return and report your findings.",
         followup: "Examine the configuration files carefully — come back and tell me what you found.",
         answers: ["adaptive"],
@@ -1022,7 +1309,7 @@ const GHOST_QUESTIONS = [
     {
         id: 2,
         query: "What setting enables bypassing automatic safety limits?",
-        hint: "Look at configuration keys related to control, safety, and shutdown. Check safety_limits.cfg — one key explicitly overrides the safety layer.",
+        hints: { weak: GHOST_HINT_WEAK, medium: GHOST_HINT_MEDIUM, strong: GHOST_HINT_STRONG },
         mission: "The transfer path is becoming clear. Now dig deeper into the system configuration.",
         followup: "Review safety_limits.cfg carefully. There is one key that should not have been enabled.",
         answers: ["manual_override", "manual override", "override"],
@@ -1031,24 +1318,25 @@ const GHOST_QUESTIONS = [
     },
     {
         id: 3,
-        query: "Which specific modification increased the risk of delayed shutdown during neural spikes?",
-        hint: "Check control_loop.cfg, safety_limits.cfg, and shutdown_logic.patch. The patch changes section lists exactly what was modified — focus on timing and spike handling.",
+        query: "Q3: Explain how the modifications in the shutdown logic increased the risk of delayed system response during neural spikes. Refer to specific changes in the configuration.",
+        hints: { weak: GHOST_HINT_WEAK, medium: GHOST_HINT_MEDIUM, strong: GHOST_HINT_STRONG },
         mission: "Final vector. A silent patch changed how the system responds during neural spikes.",
         followup: "Open shutdown_logic.patch and read the changes carefully. Something was disabled. Something else was extended.",
-        answers: ["disable immediate shutdown", "extend spike tolerance", "spike tolerance window", "delayed shutdown", "immediate shutdown", "tolerance window", "suppress warning"],
-        correct_reply: "Confirmed. The patch disabled immediate shutdown on spike detection and extended the spike tolerance window — removing the safety net during high-activity neural events. Chain of custody fully reconstructed.",
-        wrong_reply: "Incomplete. The patch made two specific changes. Read shutdown_logic.patch carefully. What was disabled? What was extended?",
+        answers: ["disable immediate shutdown", "extend spike tolerance", "spike tolerance window", "delayed shutdown", "immediate shutdown", "tolerance window", "suppress warning", "overload"],
+        correct_reply: "Confirmed. The shutdown logic patch disables immediate shutdown and extends the spike tolerance window, which delays the system\'s response to dangerous neural activity and increases the risk of overload. Chain of custody fully reconstructed.",
+        wrong_reply: "Incomplete. Read shutdown_logic.patch carefully — what specific changes delay the shutdown response during neural spikes, and how does that increase risk?",
     },
 ];
 
-function Ghost41Chat({ solved, unlocked }: { solved: boolean[]; unlocked: boolean }) {
+function Ghost41Chat({ solved, unlocked, onHintUsed, onCorrect }: { solved: boolean[]; unlocked: boolean; onHintUsed?: (pts: number) => void; onCorrect?: (pts: number) => void }) {
     const solvedCount = solved.filter(Boolean).length;
     const [open, setOpen] = useState(false);
     const [qIdx, setQIdx] = useState(0);
     const [msgs, setMsgs] = useState<ChatMsg[]>([]);
     const [input, setInput] = useState("");
     const [done, setDone] = useState(false);
-    const [showHint, setShowHint] = useState<"hidden" | "confirm" | "shown">("hidden");
+    const [hintPanel, setHintPanel] = useState<"closed" | "open">("closed");
+    const [shownHints, setShownHints] = useState<Record<string, boolean>>({});
     const [wrongCount, setWrongCount] = useState(0);
     const [lastCorrect, setLastCorrect] = useState(false);
     const msgsEndRef = useRef<HTMLDivElement | null>(null);
@@ -1071,7 +1359,7 @@ function Ghost41Chat({ solved, unlocked }: { solved: boolean[]; unlocked: boolea
                 { role: "ghost", text: "GHOST41_ID > QUERY\n" + q.query },
             ]);
         }
-        setInput(""); setShowHint("hidden"); setWrongCount(0); setLastCorrect(false);
+        setInput(""); setHintPanel("closed"); if (qIdx === 0) setShownHints({}); setWrongCount(0); setLastCorrect(false);
     }, [qIdx]);
 
     const send = () => {
@@ -1084,10 +1372,11 @@ function Ghost41Chat({ solved, unlocked }: { solved: boolean[]; unlocked: boolea
         if (!ok) {
             const newCount = wrongCount + 1;
             setWrongCount(newCount);
-            if (newCount >= 3) setShowHint("shown");
         }
+        const Q_POINTS = [30, 30, 0];
         if (ok) {
-            setWrongCount(0); setShowHint("hidden");
+            setWrongCount(0); setHintPanel("closed"); setShownHints({});
+            if (onCorrect && Q_POINTS[qIdx] > 0) onCorrect(Q_POINTS[qIdx]);
             if (qIdx < GHOST_QUESTIONS.length - 1) setTimeout(() => setQIdx(i => i + 1), 1800);
             else setTimeout(() => setDone(true), 1800);
         }
@@ -1098,7 +1387,7 @@ function Ghost41Chat({ solved, unlocked }: { solved: boolean[]; unlocked: boolea
         {open && (
             <div style={{ position: "fixed", inset: 0, zIndex: 5000, background: "rgba(0,0,0,0.4)" }}
                 onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}>
-                <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(400px,100vw)", background: "#060d14", borderLeft: "2px solid #0a2a3a", display: "flex", flexDirection: "column", fontFamily: "var(--font-mono)", boxShadow: "-8px 0 32px rgba(0,0,0,0.7)" }}>
+                <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(360px,100vw)", background: "#060d14", borderLeft: "2px solid #0a2a3a", display: "flex", flexDirection: "column", fontFamily: "var(--font-mono)", boxShadow: "-8px 0 32px rgba(0,0,0,0.7)" }}>
 
                     {/* Header */}
                     <div style={{ background: "#07111a", borderBottom: "1px solid #0a2a3a", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
@@ -1158,19 +1447,83 @@ function Ghost41Chat({ solved, unlocked }: { solved: boolean[]; unlocked: boolea
                         <div ref={msgsEndRef} />
                     </div>
 
-                    {/* Hint bar — hidden after correct answer, shown after 3 wrong */}
+                    {/* Hint bar — 3-level system */}
                     {!done && !lastCorrect && (
-                        <div style={{ padding: "8px 24px", borderTop: "1px solid #0a2030", background: "#050e18", flexShrink: 0 }}>
-                            {showHint === "shown"
-                                ? <div style={{ fontSize: "0.54rem", color: "#aaaa44", fontStyle: "italic", padding: "6px 0", lineHeight: 1.6 }}>{q.hint}</div>
-                                : showHint === "confirm"
-                                    ? <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
-                                        <span style={{ fontSize: "0.5rem", color: "#6a5a2a", letterSpacing: 0.5 }}>Reveal hint?</span>
-                                        <button onClick={() => setShowHint("shown")} style={{ background: "#1a1200", border: "1px solid #6a5a1a", color: "#aaaa44", fontSize: "0.48rem", cursor: "pointer", padding: "3px 10px", borderRadius: 2, letterSpacing: 1 }}>YES</button>
-                                        <button onClick={() => setShowHint("hidden")} style={{ background: "none", border: "1px solid #1a2a3a", color: "#3a5a6a", fontSize: "0.48rem", cursor: "pointer", padding: "3px 10px", borderRadius: 2, letterSpacing: 1 }}>NO</button>
-                                    </div>
-                                    : <button onClick={() => setShowHint("confirm")} style={{ background: "none", border: "1px solid #0a2a3a", color: "#3a6a7a", fontSize: "0.5rem", cursor: "pointer", padding: "4px 12px", letterSpacing: 1, borderRadius: 3, transition: "all 0.2s" }}>▾ HINT</button>
-                            }
+                        <div style={{ borderTop: "1px solid #0a2030", background: "#050e18", flexShrink: 0 }}>
+                            {/* Toggle button */}
+                            <div style={{ padding: "8px 24px" }}>
+                                <button onClick={() => setHintPanel(p => p === "open" ? "closed" : "open")}
+                                    style={{
+                                        background: hintPanel === "open" ? "#0a1a2a" : "none",
+                                        border: "1px solid #1a4a5a",
+                                        color: "#00d4ff",
+                                        fontSize: "0.52rem",
+                                        cursor: "pointer",
+                                        padding: "6px 14px",
+                                        letterSpacing: 1,
+                                        borderRadius: 3,
+                                        transition: "all 0.2s",
+                                        width: "100%",
+                                        textAlign: "left",
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        boxShadow: "0 0 8px #00d4ff11",
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#00d4ff88"; e.currentTarget.style.background = "#0a1a2a"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = "#1a4a5a"; e.currentTarget.style.background = hintPanel === "open" ? "#0a1a2a" : "none"; }}>
+                                    <span style={{ fontFamily: "var(--font-head)", letterSpacing: 2 }}>💡 HINTS</span>
+                                    <span style={{ fontSize: "0.44rem", color: "#3a8a9a" }}>{hintPanel === "open" ? "▲ HIDE" : "▼ SHOW HINTS"}</span>
+                                </button>
+                            </div>
+                            {/* Hint level picker */}
+                            {hintPanel === "open" && (
+                                <div style={{ padding: "4px 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {(["weak", "medium", "strong"] as const).map(lvl => {
+                                        // Global hint key — paid once, shown for all questions
+                                        const hintKey = lvl;
+                                        const revealed = shownHints[hintKey];
+                                        const costs = { weak: 10, medium: 15, strong: 50 };
+                                        const labels = { weak: "WEAK", medium: "MEDIUM", strong: "STRONG" };
+                                        const desc = { weak: "Subtle nudge in the right direction", medium: "Specific area to investigate", strong: "Direct answers for all 3 questions" };
+                                        const colors = { weak: "#44cc88", medium: "#ccaa33", strong: "#ff6644" };
+                                        const borders = { weak: "#1a4a2a", medium: "#4a3a0a", strong: "#4a1a08" };
+                                        const bgs = { weak: "#071a0f", medium: "#1a1205", strong: "#1a0803" };
+                                        return (
+                                            <div key={lvl} style={{ borderRadius: 4, overflow: "hidden", border: `1px solid ${revealed ? colors[lvl] : borders[lvl]}`, transition: "all 0.2s" }}>
+                                                {/* Hint header — always visible */}
+                                                <div style={{
+                                                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                                                    padding: "8px 12px",
+                                                    background: revealed ? bgs[lvl] : "transparent",
+                                                    cursor: revealed ? "default" : "pointer",
+                                                }}
+                                                    onClick={() => {
+                                                        if (!revealed) { setShownHints(h => ({ ...h, [hintKey]: true })); if (onHintUsed) onHintUsed(costs[lvl]); }
+                                                    }}>
+                                                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                                        <span style={{ fontFamily: "var(--font-head)", fontSize: "0.52rem", letterSpacing: 2, color: colors[lvl] }}>{labels[lvl]} HINT</span>
+                                                        <span style={{ fontSize: "0.42rem", color: "#3a6a7a" }}>{desc[lvl]}</span>
+                                                    </div>
+                                                    {!revealed
+                                                        ? <div style={{ textAlign: "right" }}>
+                                                            <div style={{ fontFamily: "var(--font-head)", fontSize: "0.54rem", color: colors[lvl] }}>-{costs[lvl]}pts</div>
+                                                            <div style={{ fontSize: "0.4rem", color: "#3a6a7a" }}>click to reveal · applies to all questions</div>
+                                                        </div>
+                                                        : <span style={{ fontSize: "0.5rem", color: colors[lvl] }}>✓ unlocked</span>
+                                                    }
+                                                </div>
+                                                {/* Hint content — shown for every question once revealed */}
+                                                {revealed && (
+                                                    <div style={{ padding: "10px 12px", background: bgs[lvl], borderTop: `1px solid ${borders[lvl]}`, fontSize: "0.56rem", color: "#c8d8c8", lineHeight: 1.9, letterSpacing: 0.3, whiteSpace: "pre-line" }}>
+                                                        {q.hints[lvl]}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1228,7 +1581,7 @@ function makeFragPool(): string[] {
 }
 
 // Actor options base — stable order, not shuffled (prevents continuous reshuffling)
-const _AO_BASE = ["lsuri_fw", "a.m_arch", "vk_sec", "ghost_patch41"];
+const _AO_BASE = ["lsuri_fw", "a.m_arch", "vk_sec", "ghost_patch41", "babaji", "km_pr", "rs_e", "rm_fin"];
 
 function ReconPanel({ onToast, onUnlockGhost }: { onToast: (m: string, t: ToastType) => void; onUnlockGhost?: () => void }) {
     const CF = ["wrk04", "nas02", "usb07", "ext_host"];
@@ -1289,7 +1642,7 @@ function ReconPanel({ onToast, onUnlockGhost }: { onToast: (m: string, t: ToastT
 
     return (<div style={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem" }}>
         <div style={{ color: "var(--text-dim)", fontSize: "0.58rem", lineHeight: 1.6, whiteSpace: "nowrap", overflow: "hidden" }}>────────────────────────────────────────────────────────────</div>
-        <div className="glitch" style={{ color: "var(--green)", fontFamily: "var(--font-head)", fontSize: "0.6rem", letterSpacing: 3, padding: "5px 0", textShadow: "var(--glow-g)" }}>| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TRANSFER RECONSTRUCTION PANEL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</div>
+        <div className="glitch" style={{ color: "var(--green)", fontFamily: "var(--font-head)", fontSize: "0.6rem", letterSpacing: 3, padding: "5px 0", textShadow: "var(--glow-g)" }}>|                  TRANSFER RECONSTRUCTION PANEL                  |</div>
         <div style={{ color: "var(--text-dim)", fontSize: "0.58rem", lineHeight: 1.6, whiteSpace: "nowrap", overflow: "hidden" }}>────────────────────────────────────────────────────────────</div>
         <div style={{ padding: "10px 0 4px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -1684,7 +2037,7 @@ export default function App() {
 
                     {/* Top label */}
                     <div style={{ fontSize: "0.46rem", color: "#4a1a1a", letterSpacing: 4, fontFamily: "var(--font-head)", marginBottom: 12 }}>
-                        NEUROBAND FORENSIC INTERFACE &nbsp;·&nbsp; ROUND 2 TASK 3
+                        NEUROBAND FORENSIC INTERFACE  ·  ROUND 2 TASK 3
                     </div>
 
                     {/* Case title */}
@@ -1785,14 +2138,14 @@ export default function App() {
             </div>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                 {[["STATUS", "ACTIVE", true], ["NODES", `${total}/8`, false], ["FRAGS", `${total}/8`, false]].map(([k, v, b]) => (<div key={String(k)} style={{ fontSize: "0.58rem", letterSpacing: 2, color: "var(--text-dim)" }}>{k}: <span className={b ? "blink" : ""} style={{ color: "var(--green)" }}>{String(v)}</span></div>))}
-                <div style={{ fontSize: "0.58rem", letterSpacing: 2, color: "var(--text-dim)" }}>SCORE: <span style={{ color: score < 0 ? "var(--red)" : "var(--yellow)", textShadow: score < 0 ? "var(--glow-r)" : "var(--glow-y)" }}>{score}</span></div>
+
             </div>
         </header>
 
-        <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gridTemplateRows: "auto 1fr", height: "calc(100vh - 60px)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", height: "calc(100vh - 60px)" }}>
 
             {/* LEFT */}
-            <div style={{ background: "var(--bg2)", borderRight: "1px solid var(--border)", padding: 14, overflowY: "auto", gridRow: "1/3" }}>
+            <div style={{ background: "var(--bg2)", borderRight: "1px solid var(--border)", padding: 14, overflowY: "auto" }}>
 
                 {/* ── NODE PANEL ── */}
                 <div style={{ fontFamily: "var(--font-head)", fontSize: "0.52rem", letterSpacing: 3, color: "var(--blue)", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid var(--border)" }}>▸ INVESTIGATION NODES</div>
@@ -1816,18 +2169,14 @@ export default function App() {
                     <div style={{ height: 4, background: "var(--dim)", borderRadius: 2, overflow: "hidden" }}><div style={{ height: "100%", background: "linear-gradient(90deg,var(--green),var(--blue))", width: `${total / 8 * 100}%`, transition: "width 0.5s ease" }} /></div>
                     <div style={{ fontSize: "0.52rem", color: "var(--green)", marginTop: 4, textAlign: "right" }}>{total} / 8 NODES</div>
                 </div>
-                <div style={{ marginTop: 8, padding: 10, border: "1px solid var(--border)", borderRadius: 3, background: "var(--bg)" }}>
-                    <div style={{ fontSize: "0.52rem", letterSpacing: 2, color: "var(--text-dim)" }}>INVESTIGATION SCORE</div>
-                    <div style={{ fontSize: "1.1rem", color: score < 0 ? "var(--red)" : "var(--yellow)", textShadow: score < 0 ? "var(--glow-r)" : "var(--glow-y)", fontFamily: "var(--font-head)", letterSpacing: 2, margin: "4px 0" }}>{score}</div>
-                    <div style={{ fontSize: "0.46rem", color: "var(--text-dim)" }}>HINTS DEDUCT POINTS · NO PENALTY FOR RETRIES</div>
-                </div>
+
 
 
 
             </div>
 
-            {/* RIGHT TOP */}
-            <div style={{ background: "var(--bg2)", padding: 0, borderBottom: "1px solid var(--border)", overflow: "hidden" }}>
+            {/* RIGHT — single scrollable column: status panel + reconstruction */}
+            <div style={{ background: "var(--bg2)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: "0.62rem" }}>
                     <div style={{ color: "var(--text-dim)", fontSize: "0.58rem", lineHeight: 1.6, whiteSpace: "nowrap", overflow: "hidden" }}>────────────────────────────────────────────────────────────────────</div>
                     {/* Unified node+fragment table — one row per node, fragment shown inline */}
@@ -1884,22 +2233,22 @@ export default function App() {
 
                     <div style={{ color: "var(--text-dim)", fontSize: "0.58rem", lineHeight: 1.6, whiteSpace: "nowrap", overflow: "hidden" }}>────────────────────────────────────────────────────────────────────</div>
                     <div style={{ fontSize: "0.52rem", letterSpacing: 1, padding: "2px 0" }}>
-                        {allSolved ? <span className="glitch" style={{ color: "var(--green)", textShadow: "var(--glow-g)" }}>| &nbsp;&nbsp;TRANSFER RECONSTRUCTION (NOW UNLOCKED) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</span> : <span style={{ color: "var(--text-dim)" }}>| &nbsp;&nbsp;TRANSFER RECONSTRUCTION (LOCKED — COLLECT ALL FRAGMENTS) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</span>}
+                        {allSolved ? <span className="glitch" style={{ color: "var(--green)", textShadow: "var(--glow-g)" }}>|   TRANSFER RECONSTRUCTION (NOW UNLOCKED)                           |</span> : <span style={{ color: "var(--text-dim)" }}>|   TRANSFER RECONSTRUCTION (LOCKED — COLLECT ALL FRAGMENTS)         |</span>}
                     </div>
                     <div style={{ color: "var(--text-dim)", fontSize: "0.58rem", lineHeight: 1.6, whiteSpace: "nowrap", overflow: "hidden" }}>────────────────────────────────────────────────────────────────────</div>
                 </div>
-            </div>
 
-            {/* BOTTOM */}
-            <div style={{ background: "var(--bg3)", borderTop: "1px solid var(--border)", padding: "14px 16px", overflowY: "auto" }}>
-                {!allSolved ? (<div style={{ color: "var(--text-dim)", fontSize: "0.62rem", letterSpacing: 2, padding: 14, border: "1px dashed var(--dim)", borderRadius: 3, textAlign: "center", lineHeight: 1.9 }}><span style={{ color: "var(--red)" }}>⚠ LOCKED</span> — Collect all 8 fragments to unlock Transfer Reconstruction.</div>) : (<ReconPanel onToast={toast} onUnlockGhost={() => setShowGhost(true)} />)}
+                {/* RECONSTRUCTION SECTION — inline below status, scrolls with right panel */}
+                <div style={{ background: "var(--bg3)", borderTop: "1px solid var(--border)", padding: "14px 16px", flex: 1 }}>
+                    {!allSolved ? (<div style={{ color: "var(--text-dim)", fontSize: "0.62rem", letterSpacing: 2, padding: 14, border: "1px dashed var(--dim)", borderRadius: 3, textAlign: "center", lineHeight: 1.9 }}><span style={{ color: "var(--red)" }}>⚠ LOCKED</span> — Collect all 8 fragments to unlock Transfer Reconstruction.</div>) : (<ReconPanel onToast={toast} onUnlockGhost={() => setShowGhost(true)} />)}
+                </div>
             </div>
 
 
         </div>
 
         {/* ── GHOST41_ID — fixed bottom-right corner widget ── */}
-        <Ghost41Chat solved={solved} unlocked={showGhost} />
+        <Ghost41Chat solved={solved} unlocked={showGhost} onHintUsed={(pts) => { setScore(s => s - pts); toast(`GHOST HINT: −${pts} PTS`, "warn"); }} onCorrect={(pts) => { setScore(s => s + pts); toast(`+${pts} POINTS AWARDED`, "success"); }} />
 
         {modal !== null && <PuzzleModal idx={modal} solved={solved[modal]} hintState={hints[modal]} onClose={() => setModal(null)} onSolve={onSolve} onHintRequest={onHR} onToast={toast} />}
         {pending && <HintConfirm nodeIdx={pending.nodeIdx} level={pending.level} onConfirm={applyHint} onCancel={() => setPending(null)} />}
