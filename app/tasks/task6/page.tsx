@@ -467,8 +467,238 @@ function Task6(){
   );
 }
 
-  return <div>PASTE YOUR FULL UI CODE HERE</div>; // ← replace with your actual return
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,color:T.whiteDim,fontFamily:"monospace"}}>
+      <style>{`
+        *{box-sizing:border-box}
+        ::-webkit-scrollbar{width:5px}
+        ::-webkit-scrollbar-track{background:${T.bg}}
+        ::-webkit-scrollbar-thumb{background:${T.borderMid};border-radius:3px}
+        select option{background:${T.bgPanel};color:${T.whiteDim}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+        .fu{animation:fadeUp .3s ease both}
+        .blink{animation:blink 1.1s step-start infinite}
+        .pulse{animation:pulse 2s ease infinite}
+        button:hover{opacity:.85!important}
+      `}</style>
+
+      {/* CRT scanlines */}
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:1,backgroundImage:`repeating-linear-gradient(transparent,transparent 2px,${T.scan} 2px,${T.scan} 4px)`}}/>
+
+      <div style={{maxWidth:1200,margin:"0 auto",padding:"0",position:"relative",zIndex:2}}>
+
+        {/* ── Top bar (like "INTERNAL OPS CONSOLE // CASE #131") ── */}
+        <div style={{background:T.bgDeep,borderBottom:`1px solid ${T.border}`,padding:"8px 20px",display:"flex",alignItems:"center",gap:12}}>
+          <span style={{fontSize:9,color:T.redDim,letterSpacing:3}}>INTERNAL OPS CONSOLE // CASE #131</span>
+          <span style={{color:T.border}}>|</span>
+          <span style={{fontSize:9,color:T.whiteGhost,letterSpacing:1}}>NEUROBAND INVESTIGATION — ROUND 2</span>
+          <div style={{marginLeft:"auto",fontSize:9,color:T.redDim}}>
+            SCORE: <span style={{color:score>=0?T.green:T.red}}>{score>=0?"+":""}{score}</span> pts
+          </div>
+        </div>
+
+        {/* ── Breadcrumb + title ── */}
+        <div style={{padding:"14px 20px 0"}}>
+          <div style={{fontSize:9,color:T.redDim,letterSpacing:1,marginBottom:6}}>
+            ▸ CASE #131 / TASK 6 / INCIDENT SYNTHESIS
+          </div>
+          <div style={{fontSize:22,color:T.white,letterSpacing:3,fontWeight:"bold",marginBottom:4}}>
+            INCIDENT SYNTHESIS BOARD
+          </div>
+          <div style={{display:"flex",gap:24,alignItems:"center",flexWrap:"wrap",marginBottom:14,fontSize:9,color:T.whiteGhost,letterSpacing:1}}>
+            <span>OBJECTIVE: <span style={{color:T.white}}>Reconstruct three causal failure chains</span></span>
+            <span style={{color:T.border}}>|</span>
+            <span>CLEARANCE: <span style={{color:allOk?T.green:T.amber}}>{allOk?"COMPLETE":"INCOMPLETE"}</span></span>
+            <span style={{color:T.border}}>|</span>
+            <span>HINTS: <span style={{color:T.whiteDim}}>{hintUsed}/3</span></span>
+          </div>
+          {/* Thin red rule */}
+          <div style={{height:1,background:`linear-gradient(to right, ${T.borderHot}, transparent)`,marginBottom:16}}/>
+        </div>
+
+        {/* ── Main layout ── */}
+        <div style={{display:"grid",gridTemplateColumns:"260px 1fr",gap:0}}>
+
+          {/* ── Left: Evidence Archive ── */}
+          <div style={{borderRight:`1px solid ${T.border}`,padding:"0 14px 20px 20px"}}>
+            <div style={{fontSize:8,color:T.red,letterSpacing:2,marginBottom:8,paddingBottom:5,borderBottom:`1px solid ${T.border}`}}>
+              ── EVIDENCE ARCHIVE
+            </div>
+            <div style={{fontSize:8,color:T.whiteGhost,marginBottom:8}}>Click to inspect · Drag to chain slots</div>
+
+            <div style={{maxHeight:"52vh",overflowY:"auto",paddingRight:4}}>
+              {EVIDENCE.map(ev=>(
+                <div key={ev.id} draggable onDragStart={e=>e.dataTransfer.setData("evidenceId",ev.id)} onClick={()=>setModalEv(ev)}
+                  style={{cursor:"grab",background:T.bgPanel,border:`1px solid ${ev.isRedHerring?T.amberDim:T.border}`,borderRadius:3,padding:"5px 8px",marginBottom:4,display:"flex",alignItems:"center",gap:6,userSelect:"none",transition:"border-color .15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=ev.isRedHerring?T.amber:T.borderMid}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=ev.isRedHerring?T.amberDim:T.border}>
+                  <span style={{fontSize:7,color:ev.isRedHerring?T.amber:T.red,background:ev.isRedHerring?"#1a1000":T.redFaint,border:`1px solid ${ev.isRedHerring?T.amberDim:T.borderMid}`,padding:"1px 4px",borderRadius:2,letterSpacing:.8,whiteSpace:"nowrap"}}>
+                    {ev.tag}
+                  </span>
+                  <span style={{fontFamily:"monospace",fontSize:9,color:ev.isRedHerring?T.amber:T.whiteDim,flex:1,lineHeight:1.3}}>{ev.title}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Evidence Tags section (like the screenshot sidebar) */}
+            <div style={{marginTop:14,borderTop:`1px solid ${T.border}`,paddingTop:10}}>
+              <div style={{fontSize:8,color:T.red,letterSpacing:1.5,marginBottom:6}}>EVIDENCE TAGS</div>
+              {["autopsy_temp","neural_log","fw_tolerance","override_approval","shutdown_suppressed","security_access"].map(id=>{
+                const e=EVIDENCE.find(x=>x.id===id)!;
+                return <div key={id} style={{fontSize:9,color:T.red,marginBottom:3}}>▸ <span style={{color:T.whiteDim}}>{e.title}</span></div>;
+              })}
+            </div>
+
+            {/* GhostID notes */}
+            <div style={{marginTop:12,border:`1px solid ${T.border}`,borderRadius:3,padding:10,background:T.bgDeep}}>
+              <div style={{fontSize:8,color:T.red,letterSpacing:1.5,marginBottom:6}}>GHOSTID_41 NOTES</div>
+              <div style={{fontSize:9,color:T.whiteDim,lineHeight:1.6,marginBottom:6}}>"Read behavior, not comments."</div>
+              <div style={{fontSize:8,color:T.whiteGhost}}>Ask the right questions to proceed.</div>
+            </div>
+
+            {/* Hint System */}
+            <div style={{marginTop:12,border:`1px solid ${T.border}`,borderRadius:3,padding:10}}>
+              <div style={{fontSize:8,color:T.red,letterSpacing:1.5,marginBottom:5}}>HINT SYSTEM</div>
+              <div style={{fontSize:8,color:T.whiteGhost,marginBottom:7}}>Cost: −10 / −20 / −35 pts per use</div>
+              <button onClick={useHint} disabled={hintUsed>=3}
+                style={{width:"100%",background:"transparent",border:`1px solid ${hintUsed>=3?T.border:T.borderMid}`,color:hintUsed>=3?T.whiteGhost:T.red,fontFamily:"monospace",fontSize:9,padding:"5px",cursor:hintUsed>=3?"not-allowed":"pointer",letterSpacing:1}}>
+                [ REQUEST HINT{hintUsed>=3?" — EXHAUSTED":""} ]
+              </button>
+              {hintText&&<div style={{marginTop:7,fontSize:9,color:T.whiteDim,lineHeight:1.6,borderTop:`1px solid ${T.border}`,paddingTop:7}} className="fu">{hintText}</div>}
+            </div>
+          </div>
+
+          {/* ── Right: Chain Builder ── */}
+          <div style={{padding:"0 20px 20px 18px"}}>
+            <div style={{fontSize:8,color:T.red,letterSpacing:2,marginBottom:12,paddingBottom:5,borderBottom:`1px solid ${T.border}`}}>
+              ── FAILURE CHAIN BUILDER — SOURCE COMPARISON: FULL CAUSAL RECONSTRUCTION
+            </div>
+
+            {chains.map((chain,ci)=>{
+              const cor=CORRECT[chain.id];
+              const bCol=chain.verified?T.green:validated&&!chain.verified?T.red:T.border;
+              return(
+                <div key={chain.id} className="fu" style={{border:`1px solid ${bCol}`,borderRadius:4,padding:14,marginBottom:16,background:T.bgPanel,transition:"all .4s",boxShadow:chain.verified?`0 0 18px ${T.greenDim}`:validated&&!chain.verified?`0 0 12px ${T.redFaint}`:"none"}}>
+                  {/* Chain header */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <span style={{fontSize:12,color:chain.verified?T.green:validated&&!chain.verified?T.red:T.white,letterSpacing:1.5}}>
+                      CHAIN {chain.id}
+                    </span>
+                    <span style={{fontSize:8,letterSpacing:1,color:chain.verified?T.green:validated&&!chain.verified?T.red:T.whiteGhost}}>
+                      {chain.verified?"✓ CHAIN VERIFIED":validated&&!chain.verified?"✗ INCORRECT — RETRY":""}
+                    </span>
+                  </div>
+
+                  {/* Three slots */}
+                  <div style={{display:"flex",gap:6,marginBottom:8}}>
+                    {chain.slots.map((slot,si)=>(
+                      <Slot key={si} slot={slot} verified={chain.verified} validated={validated}
+                        correct={slot.evidenceId===cor.slots[si]}
+                        onDrop={id=>drop(ci,si,id)} onClear={()=>clear(ci,si)} onInspect={setModalEv}/>
+                    ))}
+                  </div>
+
+                  <div style={{fontSize:7,color:T.whiteGhost,letterSpacing:1,marginBottom:10}}>
+                    [ CAUSE ] ──────→ [ ENABLING DECISION ] ──────→ [ CONSEQUENCE ]
+                  </div>
+
+                  {/* Dept + Suspect row */}
+                  <div style={{display:"flex",gap:10}}>
+                    {[
+                      {lbl:"RESPONSIBLE DEPARTMENT",val:chain.department,opts:DEPTS,   set:(v:string)=>setChains(p=>p.map((c,i)=>i===ci?{...c,department:v}:c)),cor2:chain.department===cor.dept},
+                      {lbl:"LINKED SUSPECT",         val:chain.suspect,   opts:SUSPECTS,set:(v:string)=>setChains(p=>p.map((c,i)=>i===ci?{...c,suspect:v}:c)),   cor2:chain.suspect===cor.suspect},
+                    ].map(f=>(
+                      <div key={f.lbl} style={{flex:1}}>
+                        <div style={{fontSize:7,color:T.redDim,letterSpacing:1,marginBottom:3}}>{f.lbl}</div>
+                        <select value={f.val||""} onChange={e=>f.set(e.target.value)} disabled={chain.verified}
+                          style={{width:"100%",background:T.bgDeep,border:`1px solid ${validated?(f.cor2?T.green:T.red):T.border}`,color:T.whiteDim,fontFamily:"monospace",fontSize:9,padding:"5px 7px",outline:"none",borderRadius:3}}>
+                          <option value="">-- select --</option>
+                          {f.opts.map(o=><option key={o} value={o}>{o}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Validate button */}
+            {!allOk&&(
+              <button onClick={validate} disabled={!ready}
+                style={{background:"transparent",border:`1px solid ${ready?T.borderHot:T.border}`,color:ready?T.red:T.whiteGhost,fontFamily:"monospace",fontSize:11,padding:"9px 26px",cursor:ready?"pointer":"not-allowed",letterSpacing:1.5,marginBottom:14,display:"block",opacity:ready?1:.4,transition:"all .2s"}}>
+                [ VALIDATE CHAINS ]
+              </button>
+            )}
+
+            {/* Validation result */}
+            {validated&&!allOk&&(
+              <div className="fu" style={{border:`1px solid ${T.borderMid}`,borderRadius:3,padding:10,marginBottom:12,background:T.bgDeep}}>
+                <div style={{fontSize:7,color:T.red,letterSpacing:1.5,marginBottom:5}}>VALIDATION RESULT</div>
+                {chains.map(c=>(
+                  <div key={c.id} style={{fontFamily:"monospace",fontSize:9,color:c.verified?T.green:T.red,marginBottom:2}}>
+                    CHAIN {c.id} {c.verified?"✓ VERIFIED":"✗ INCORRECT"}
+                  </div>
+                ))}
+                <div style={{fontFamily:"monospace",fontSize:8,color:T.amber,marginTop:5}}>
+                  INVALID CHAIN DETECTED — Re-check recovered fragments. No penalty for retrying.
+                </div>
+              </div>
+            )}
+
+            {/* All verified */}
+            {allOk&&phase==="chains"&&(
+              <div className="fu" style={{border:`1px solid ${T.green}`,borderRadius:4,padding:18,background:T.bgDeep,marginBottom:14,boxShadow:`0 0 24px ${T.greenDim}`}}>
+                <div style={{fontSize:11,color:T.green,letterSpacing:2,marginBottom:9}}>SYSTEM FAILURE MODEL COMPLETE</div>
+                <div style={{fontSize:10,color:T.whiteDim,lineHeight:1.9,marginBottom:10}}>
+                  Multiple operational decisions contributed to the NeuroBand incident.<br/><br/>
+                  <span style={{color:T.red}}>▸</span> Architecture Override — shutdown safeguard bypassed<br/>
+                  <span style={{color:T.red}}>▸</span> Firmware Instability — limiter tolerance elevated<br/>
+                  <span style={{color:T.red}}>▸</span> Security Manipulation — incident reporting delayed
+                </div>
+                <div style={{fontSize:8,color:T.border,marginBottom:9}}>─────────────────────────────────────────────────</div>
+                <div style={{fontSize:10,color:T.whiteDim,lineHeight:1.9,marginBottom:14}}>
+                  CONFIRMED INVOLVEMENT<br/><br/>
+                  Architecture Division → <span style={{color:T.white}}>Dr Aarya Mehta</span><br/>
+                  Firmware Engineering &nbsp;→ <span style={{color:T.white}}>Leena Suri</span><br/>
+                  Security Operations &nbsp;→ <span style={{color:T.white}}>Vikrant Kaul</span>
+                </div>
+                <button onClick={()=>setPhase("questions")}
+                  style={{background:"transparent",border:`1px solid ${T.borderHot}`,color:T.red,fontFamily:"monospace",fontSize:11,padding:"8px 22px",cursor:"pointer",letterSpacing:1}}>
+                  [ PROCEED TO FINAL QUESTIONS ]
+                </button>
+              </div>
+            )}
+
+            {phase==="questions"&&allOk&&(
+              <FinalQs onDone={pts=>{setScore(s=>s+pts);setPhase("done");}}/>
+            )}
+
+            {phase==="done"&&(
+              <div className="fu" style={{border:`1px solid ${T.borderMid}`,borderRadius:4,padding:18,background:T.bgDeep,marginTop:16}}>
+                <div style={{fontSize:10,color:T.green,letterSpacing:1.5,marginBottom:7}}>INCIDENT SYNTHESIS COMPLETE</div>
+                <div style={{fontSize:10,color:T.whiteDim,lineHeight:1.8,marginBottom:12}}>
+                  Key departments implicated: Architecture · Firmware · Security<br/><br/>
+                  Prepare to question the individuals responsible during the interrogation round.
+                </div>
+                <div style={{fontSize:12,color:T.red,letterSpacing:2,marginBottom:8}} className="blink">
+                  ▶ TASK 7 — INTERROGATION ROOM
+                </div>
+                <div style={{fontSize:10,color:T.whiteGhost}}>
+                  FINAL SCORE: <span style={{color:score>=0?T.green:T.red}}>{score>=0?"+":""}{score} pts</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {modalEv&&<Modal ev={modalEv} onClose={()=>setModalEv(null)}/>}
+    </div>
+  );
 }
+
 export default function Page() {
   return <Task6 />;
 }
