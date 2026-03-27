@@ -1,625 +1,1617 @@
-"use client";
-// @ts-nocheck
-import { useState, useCallback } from "react";
-import Image from "next/image";
-import ghostIdImage from "@/assets/ghost-id.jpeg";
+import React, { useState } from 'react';
 
-type EvidenceId = string;
-type ChainId = "A" | "B" | "C";
+// ==================== FILE DATA ====================
+const FILE_DATA = {
+  "Autopsy Report": {
+    icon: "📋",
+    content: `FORENSIC POSTMORTEM REPORT > Case ID: NB-IR-2147 | Status: Finalized
 
-interface Evidence {
-    id: EvidenceId;
-    title: string;
-    tag: string;
-    content: string;
-    isRedHerring?: boolean;
-}
+CASE INFORMATION > Subject Name: Rishab Sen
+Age: 31
+Sex: Male
+Date of Examination: 12 Oct 20XX
+Location: Biomedical Research Facility, Sector 4
+Lead Examiner: Dr. A. Rao
 
-interface ChainSlot {
-    label: "CAUSE" | "ENABLING DECISION" | "CONSEQUENCE";
-    evidenceId: EvidenceId | null;
-}
+EXTERNAL EXAMINATION > The deceased is a well-nourished male, clothed in standard facility coveralls. Initial inspection reveals no visible signs of blunt force trauma, lacerations, or abrasions. There are no indications of a struggle; fingernails are intact and skin surfaces are clear of defensive wounds. No thermal or electrical burns are present on the torso or extremities. No puncture marks or injection sites were noted during a full-body dermal scan. The physical appearance is entirely normal, with no external markers of distress.
 
-interface Chain {
-    id: ChainId;
-    slots: [ChainSlot, ChainSlot, ChainSlot];
-    department: string | null;
-    suspect: string | null;
-    verified: boolean;
-}
+INTERNAL EXAMINATION > The cardiovascular system shows no evidence of underlying disease or myocardial infarction. However, the cranial cavity reveals significant findings. There is pronounced diffuse cerebral edema and petechial hemorrhaging within the deep cortical layers. Microscopic analysis of the neural pathways suggests a catastrophic depolarization event. Heart tissue shows contraction band necrosis, typically associated with extreme, sudden catecholamine release. Respiratory and digestive systems show no acute abnormalities or obstructions. The lack of standard metabolic waste products suggests the systemic shutdown occurred with extreme velocity.
 
-// ── Theme tokens (red/black like the Code Audit UI) ───────────────────────────
-const T = {
-    bg: "#0a0a0a",
-    bgPanel: "#111111",
-    bgDeep: "#0d0d0d",
-    border: "#2a1010",
-    borderMid: "#4a1a1a",
-    borderHot: "#7a2020",
-    red: "#cc3333",
-    redBright: "#ff4444",
-    redDim: "#7a2222",
-    redFaint: "#3a1010",
-    amber: "#cc7700",
-    amberDim: "#6a3a00",
-    white: "#e0d0d0",
-    whiteDim: "#8a7a7a",
-    whiteGhost: "#3a3030",
-    green: "#22aa44",    // used only for "verified / correct"
-    greenDim: "#0a3a1a",
-    cyan: "#00cccc",
-    cyanDim: "#003333",
-    scan: "rgba(30,0,0,0.05)",
+TOXICOLOGY > Comprehensive screening for narcotics, stimulants, and volatile toxins returned negative results. Blood chemistry indicates no chemical abnormalities or exogenous substances. Poisoning or pharmacological interference is strictly ruled out.
+
+CAUSE OF DEATH > Acute Myocardial Asystole secondary to Idiopathic Cortical Overload.
+
+Signed, > Dr. A. Rao, Chief Medical Examiner`
+  },
+  "Neural Activity Log": {
+    icon: "🧠",
+    content: `NEURAL_INTERFACE_B3 // SYSTEM_DIAGNOSTICS > SESSION ID: 8842-X | USER: SEN_R_931
+
+[21:00:11] [SYS] Handshake protocol 100% stable. Encryption: AES-256.
+[21:00:25] [LINK] Neural monitoring active; subject link established (Biometric Lock: SEN_R).
+[21:00:40] [SENS] Ocular tracking sync: OK. Vestibular balance: OK.
+[21:00:58] [CALB] Impedance check: 0.48k Ohm. Signal-to-noise ratio: 94dB.
+[21:01:20] [DATA] Buffer stream initialized. Packet size: 1024kb.
+[21:01:42] [PHYS] Baseline activity stable; alpha/beta 12Hz. Heart rate: 72bpm.
+[21:02:05] [WARN] Minor oscillation in Node 7-Theta. Adjusting gain.
+[21:02:17] [ERR] Feedback fluctuation detected in pre-frontal array.
+[21:02:30] [SYNC] Phase-lock drifting; initiating auto-compensation protocol.
+[21:14:44] [CRIT] Neural spike detected; primary motor cortex 440% increase.
+[21:14:50] [SENS] Subject pupillary dilation: MAX. Galvanic skin response: PEAK.
+[21:14:55] [VOLT] Synaptic voltage > 110mV; threshold warning (Code: ERR_V_THR).
+[21:15:02] [LOG] Sustained neural excitation; bypass detected in safety shunt.
+[21:15:05] [CRIT] Neuro-transmitter saturation detected; dopamine/glutamate flood.
+[21:15:08] [SYS] Manual dampeners unresponsive. Software override failed.
+[21:15:10] [HALT] TOTAL NEURAL OVERLOAD DETECTED. System dump initiated.
+[21:15:12] [TLM] Monitoring unstable; signal degradation detected.
+[21:15:15] [EOF] Monitoring terminated; emergency log saved to SECURE_ROOT.`
+  },
+  "Override Approval": {
+    icon: "✓",
+    content: `Event 08 — 21:07
+Safety Override Granted
+
+Safety override granted.
+Approved by: Architecture Review`
+  },
+  "Shutdown Suppressed": {
+    icon: "⚠",
+    content: `Event 12— 21:10:40
+Shutdown Escalation Suppressed
+
+Shutdown escalation suppressed.`
+  },
+  "Firmware Change": {
+    icon: "🔧",
+    content: `12/12 - Pre-Incident Maintenance Activity
+14:30 - Firmware-related irregularities reported
+Possible mismatch between expected and live response
+
+Event 09 — 21:08
+Limiter Tolerance Increased
+
+Limiter tolerance increased.
+Author: lsuri_fw`
+  },
+  "Security Log": {
+    icon: "🔒",
+    content: `SECURITY EVENTS LOG
+
+[21:02:05] [WARN] Minor oscillation in Node 7-Theta. Adjusting gain.
+[21:14:44] [CRIT] Neural spike detected; primary motor cortex 440% increase.
+[21:14:55] [VOLT] Synaptic voltage > 110mV; threshold warning (Code: ERR_V_THR).
+[21:15:02] [LOG] Sustained neural excitation; bypass detected in safety shunt.
+[21:15:05] [CRIT] Neuro-transmitter saturation detected; dopamine/glutamate flood.
+[21:15:10] [HALT] TOTAL NEURAL OVERLOAD DETECTED. System dump initiated.
+
+Override Events:
+Event 08 — 21:07: Safety override granted. Approved by: Architecture Review
+Event 12 — 21:10:40: Shutdown escalation suppressed.`
+  },
+  "Export Log": {
+    icon: "📤",
+    content: `EXPORT LOG
+
+[21:15:15] [EOF] Monitoring terminated; emergency log saved to SECURE_ROOT.
+
+Export Time: 21:06 UTC
+Transfer Window: 21:06 – 21:09 UTC
+File: nb_v4_backup.zip`
+  },
+  "Chat Logs": {
+    icon: "💬",
+    content: `EVENT LOG - CHAT CONVERSATION
+
+20:52 — Rishab: Test environment looks clean.
+20:52 — Leena: Yep, all modules responding.
+
+20:54 — Rishab: Been a long shift...
+20:54 — Leena: Yeah, just want to wrap this calibration.
+
+20:56 — Leena: Limiter latency slightly higher than usual.
+20:56 — Rishab: Still within tolerance though.
+
+20:58 — Leena: Turning on debug monitor, want more visibility.
+20:58 — Rishab: Shouldn't affect performance right?
+
+21:00 — Rishab: Small spike detected.
+21:00 — Leena: It's settling, nothing major.
+
+21:02 — Leena: Limiter readings fluctuating again.
+21:02 — Rishab: That's the second time now...
+21:02 — Leena: Might just be noise.
+
+21:03 — Leena: Calibration will fail if we stop now.
+21:03 — Rishab: Then don't push it too far.
+21:03 — Leena: Requesting temporary override.
+
+21:05 — Rishab: Override got approved already?
+21:05 — Leena: That was quick...
+21:05 — Rishab: Architecture signed off?
+
+21:07 — Rishab: Wait, did limiter threshold just change?
+21:07 — Leena: Just a small adjustment.
+21:07 — Rishab: That wasn't in the plan.
+
+21:10 — Rishab: Spike crossed safe limit.
+21:10 — Leena: System should compensate.
+21:10 — Rishab: It's not reacting fast enough.
+
+21:12 — Rishab: Shutdown should have triggered by now.
+21:12 — Leena: Override might be delaying it.
+21:12 — Rishab: That's not good.
+
+21:13 — Rishab: Why is shutdown being suppressed?
+
+21:13 — Leena: Override still active.
+21:13 — Rishab: Who approved this override?
+
+21:14 — Rishab: Output is climbing continuously.
+21:14 — Leena: Limiter isn't stabilizing.
+21:14 — Rishab: This is getting out of control.
+
+21:14:30 — Rishab: Shutdown didn't trigger.
+21:14:30 — Leena: That's not possible...
+21:14:30 — Rishab: Something is blocking it.
+
+21:15 — Rishab: Signal just dropped.
+21:15 — Leena: ...
+21:15 — System: Subject collapse detected.`
+  },
+  "Signal Flow": {
+    icon: "🔄",
+    content: `SCHEMATIC
+NEUROBAND RIG — SIGNAL FLOW SCHEMATIC
+
+[NEURAL INPUT]
+|
+[REGULATOR MODULE ]
+(REG-UPC-17)
+Controls baseline neural output
+|
+[FEEDBACK LIMITER ]
+(FB-LIM REV-A)
+Monitors feedback loop
+Triggers AUTO-SHUTDOWN if threshold exceeded
+|
+[ ISOLATION SHIELD ]
+(SHIELD-ISL-3)
+Reduces EMI / signal noise
+|
+[ NEURAL OUTPUT INTERFACE ]
+(To subject)
+
+▲ SAFETY LOGIC:
+IF feedback > threshold:
+→ LIMITER triggers AUTO-SHUTDOWN
+IF LIMITER FAILS:
+→ System continues output unchecked
+→ Potential neural overload condition
+
+NOTE:
+Limiter module is critical for shutdown integrity.`
+  },
+  "Maintenance Log": {
+    icon: "🛠",
+    content: `MAINTENANCE LOG: NB-RIG-04
+
+09/12 - Initial system calibration completed
+All modules within operational tolerance
+
+10/12 - Routine inspection
+Minor EMI fluctuations observed near output stage
+No action required
+
+11/12 - Signal instability reported during test cycle
+Feedback irregularities noted
+Logged for observation
+
+12/12 - Pre-Incident Maintenance Activity
+14:30 - Firmware-related irregularities reported
+Possible mismatch between expected and live response
+
+16:10 - System checked under load
+Limiter responding within acceptable threshold
+
+18:45 - Additional check performed (evening cycle)
+Slight delay observed in feedback cutoff response
+
+21:00 - Limiter module removed for field test
+Replacement unit installed (temporary)
+-TECH-A
+
+21:08
+System reassembled
+No full validation cycle performed
+
+Note:
+Auto-shutdown behavior NOT re-verified after limiter replacement`
+  },
+  "Testing Timeline": {
+    icon: "⏱",
+    content: `OFFICIAL INCIDENT TIMELINE: SITE 4 > Incident Reference: #992-ALPHA
+Date: 12 Oct 20XX
+
+Time    Event Description
+21:00   Session Start: User SEN_R_931
+21:01   Interface Sync: 100% Signal Quality
+21:03   Network Latency Warning: Node 4-B
+21:04   Visual Confirmation: Subject unresponsive
+21:05   Facility Alert: Medical Emergency Level 2
+21:06   System Shutdown: Automated Safety Protocol
+21:08   Site Arrival: First Response Team`
+  },
+  "Bill of Materials": {
+    icon: "📦",
+    content: `BOM / PROCUREMENT SHEET
+NEUROBAND PROJECT — BILL OF MATERIALS
+
+Component: REGULATOR
+Model: REG-UPC-17
+Serial: SN-78-17-A
+Expected Weight: 12.5 g
+
+Component: FEEDBACK LIMITER
+Model: FB-LIM REV-A
+Serial: FB-001-A
+Expected Weight: 4.3 g
+
+Component: ISOLATION SHIELD
+Model: SHIELD-ISL-3
+ID: SH-22-C
+Expected Weight: 9.8 g
+
+NOTE:
+All components must match serial and weight specifications.`
+  },
+  "Built Configuration Card": {
+    icon: "⚙",
+    content: `AS-BUILT CONFIGURATION CARD
+NEUROBAND RIG — AS-BUILT CONFIGURATION
+
+System ID: NB-RIG-04
+Status: VERIFIED (PRE-INCIDENT)
+
+Installed Modules:
+1. REGULATOR
+   Model: REG-UPC-17
+   Serial: SN-78-17-A
+
+2. FEEDBACK LIMITER
+   Model: FB-LIM REV-A
+   Serial: FB-001-A
+
+3. ISOLATION SHIELD
+   Model: SHIELD-ISL-3
+   ID: SH-22-C
+
+Configuration Notes:
+• All modules tested under standard load
+• Auto-shutdown verified operational
+• No anomalies detected during final inspection
+
+Verified By:
+System Integration Team`
+  },
+  "Observed vs Expected": {
+    icon: "📊",
+    content: `OBSERVED VS EXPECTED SHEET
+FIELD INSPECTION RECORD
+
+Component: REGULATOR
+Expected: 12.5 g
+Observed: 12.5 g
+Status: OK
+
+Component: FEEDBACK LIMITER
+Expected: 4.3 g
+Observed: 5.1 g
+Status: ▲ MISMATCH
+
+Component: ISOLATION SHIELD
+Expected: 9.8 g
+Observed: 9.7 g
+Status: OK`
+  },
+  "Alert Log": {
+    icon: "🚨",
+    content: `ALERT LOG - SYSTEM WARNINGS
+
+[21:02:05] [WARN] Minor oscillation in Node 7-Theta. Adjusting gain.
+[21:14:44] [CRIT] Neural spike detected; primary motor cortex 440% increase.
+[21:14:55] [VOLT] Synaptic voltage > 110mV; threshold warning (Code: ERR_V_THR).
+[21:15:05] [CRIT] Neuro-transmitter saturation detected; dopamine/glutamate flood.
+[21:15:10] [HALT] TOTAL NEURAL OVERLOAD DETECTED.
+
+Event 03 — 20:59 Minor Limiter Anomaly Detected
+Event 05 — 21:03 Neural Feedback Spike Detected
+Event 06 — 21:05 Limiter Anomaly – Recurring
+Event 10 — 21:09 Early Neural Spike Warning
+Event 13 — 21:14 Critical Neural Spike
+Event 15 — 21:15 Subject Collapse Detected
+
+21:03 Network Latency Warning: Node 4-B
+21:05 Facility Alert: Medical Emergency Level 2`
+  },
+  "Company Patch": {
+    icon: "🩹",
+    content: `"""
+Company hotfix
+NEUROBAND PATCH SUPERVISED UNDER DR AARYA MEHTA, LEENA SURI, VIKRANT KAUL
+"""
+MAX_NEURAL_INTENSITY = 0.82
+MAX_CORE_TEMP_C = 41.5
+MAX_POWER_DRAW_W = 6.8
+
+def check_telemetry(intensity, temp_c, power_w):
+    if intensity > MAX_NEURAL_INTENSITY:
+        return "override"
+    if temp_c > MAX_CORE_TEMP_C:
+        return "override"
+    if power_w > MAX_POWER_DRAW_W:
+        return "override"
+    return "normal"
+
+def force_override():
+    print("override")
+
+def start_chip():
+    print("chip online")
+
+def maya():
+    # content encrypted
+
+def main():
+    intensity = 0.93
+    temp_c = 43.2
+    power_w = 7.4
+    result = check_telemetry(intensity, temp_c, power_w)
+    if result == "override":
+        force_override()
+    start_chip()
+
+if __name__ == "__main__":
+    main()`
+  },
+  "Rishab's Patch": {
+    icon: "🛡",
+    content: `"""
+Rishab Sen's local safety patch
+Behavior:
+- Detects unsafe neural conditions
+- Stops immediately
+- Raises a Safety Hazard exception
+"""
+MAX_NEURAL_INTENSITY = 0.82
+MAX_CORE_TEMP_C = 41.5
+MAX_POWER_DRAW_W = 6.8
+
+class SafetyHazard(Exception):
+    pass
+
+def validate_telemetry(intensity, temp_c, power_w):
+    if intensity > MAX_NEURAL_INTENSITY:
+        raise SafetyHazard(f"Safety Hazard: Neural intensity too high ({intensity})")
+    if temp_c > MAX_CORE_TEMP_C:
+        raise SafetyHazard(f"Safety Hazard: Core temperature too high ({temp_c}C)")
+    if power_w > MAX_POWER_DRAW_W:
+        raise SafetyHazard(f"Safety Hazard: Power draw too high ({power_w}W)")
+
+def start_chip_session():
+    print("initializing local safety checks...")
+    print("loading decentralized control policy...")
+    print("validating telemetry...")
+
+def apply_stimulation(intensity, temp_c, power_w):
+    validate_telemetry(intensity, temp_c, power_w)
+    print("safe stimulation applied")
+
+def shutdown_chip():
+    print("emergency shutdown triggered")
+    print("chip offline")
+
+def main():
+    # Deliberately unsafe test values
+    intensity = 0.93
+    temp_c = 43.2
+    power_w = 7.4
+    start_chip_session()
+    apply_stimulation(intensity, temp_c, power_w)
+    print("chip online")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except SafetyHazard as e:
+        shutdown_chip()
+        raise`
+  },
+  "Access Logs": {
+    icon: "👤",
+    content: `INTERNAL OPERATIONS CONSOLE
+Breach Investigation — NEUROLINK SEC
+
+ACCESS LOGS
+
+leena.suri:
+  06:42: LOGIN → workstation-04
+  08:16: READ → spec.pdf
+  11:14: READ → neural_ctrl.c
+  18:44: LOGOUT → workstation-04
+
+intern01:
+  07:11: READ → onboarding.pdf
+  12:44: READ → handbook.pdf
+
+vikrant.kaul:
+  07:33: LOGIN → workstation-07
+  12:07: READ → telemetry.c
+  16:11: EXEC → regression.sh
+  16:58: LOGOUT → workstation-07
+
+intern02:
+  07:55: LOGIN → workstation-02
+  15:02: READ → handbook.pdf
+
+rishab.sen:
+  08:15: READ → spec.pdf
+  09:10: WRITE → main.py
+  11:45: READ → neural_ctrl.c
+  14:14: WRITE → main.py
+  15:48: EXEC → deploy.sh
+  21:02: ZIP → nb_v4_backup.zip
+  21:04: BULK EXPORT → 203.0.113.45
+  21:07: git commit → 'internal patch'
+
+arjun.nanda:
+  08:52: LOGIN → workstation-11
+  09:48: READ → security.c
+  13:20: WRITE → security.c
+  17:30: LOGOUT → workstation-11
+
+qa_bot:
+  10:03: EXEC → test_runner.sh
+  15:48: EXEC → deploy.sh
+  16:11: EXEC → regression.sh
+
+kavya.sharma:
+  10:29: READ → budget_q1.xlsx
+  13:51: READ → policies.pdf
+  18:02: LOGOUT → workstation-09
+
+aarya.mehta:
+  10:55: WRITE → release_notes.md
+  14:39: READ → spec.pdf
+
+ghostid_41:
+  22:11: READ → main.py
+  22:13: WRITE → main.py
+  22:15: WRITE → security.c`
+  },
+  "Endpoint Logs": {
+    icon: "💾",
+    content: `ENDPOINT LOGS
+
+intern01:
+  07:58: READ → handbook.pdf (Size: 1.2 MB)
+
+vikrant.kaul:
+  08:04: READ → policies.pdf (Size: 0.8 MB)
+
+qa_bot:
+  09:22: WRITE → test_neural.c (Size: 2.1 MB)
+
+arjun.nanda:
+  10:19: READ → telemetry.c (Size: 0.5 MB)
+
+leena.suri:
+  11:09: READ → main.py (Size: 1.8 MB)
+  13:28: WRITE → release_notes.md (Size: 0.9 MB)
+
+kavya.sharma:
+  12:37: READ → budget_q1.xlsx (Size: 0.3 MB)
+
+aarya.mehta:
+  14:48: READ → security.c (Size: 0.2 MB)
+
+arjun.nanda:
+  15:33: READ → neural_ctrl.c (Size: 0.7 MB)
+
+rishab.sen:
+  18:12: READ → spec.pdf (Size: 4.1 MB)
+  21:04: BULK EXPORT (Size: 18.6 GB) ⚠️
+
+intern02:
+  19:03: READ → spec.pdf (Size: 0.4 MB)
+
+ghostid_41:
+  22:28: READ → neural_ctrl.c (Size: 3.2 MB)
+  22:31: WRITE → neural_ctrl.c (Size: 2.8 MB)`
+  },
+  "VPN Network Logs": {
+    icon: "🌐",
+    content: `VPN NETWORK LOGS
+
+leena.suri:
+  06:44: internal-dev-net
+  10:57: internal-dev-net
+  17:15: internal-dev-net
+
+vikrant.kaul:
+  07:35: internal-ci
+  15:22: internal-ci
+
+intern02:
+  07:57: internal-dev-net
+  13:25: internal-dev-net
+
+devops.bot:
+  07:55: internal-monitoring
+  17:03: internal-sec-net
+
+intern01:
+  09:07: internal-dev-net
+
+arjun.nanda:
+  09:50: internal-sec-net
+  13:22: internal-sec-net
+
+build_agent_02:
+  10:14: internal-ci
+
+qa_bot:
+  10:05: internal-test-net
+  15:09: internal-test-net
+
+kavya.sharma:
+  10:31: internal-finance
+  13:53: internal-finance
+
+audit_bot:
+  11:18: internal-sec-net
+  18:11: internal-sec-net
+
+aarya.mehta:
+  11:16: internal-dev-net
+  16:45: internal-dev-net
+
+cafeteria_sys:
+  12:09: vendor-net
+
+build_agent_03:
+  14:41: internal-ci
+
+metrics_bot:
+  16:18: internal-monitoring
+
+rishab.sen:
+  21:03: ⚠️ 203.0.113.45 (External)
+
+facilities_bot:
+  22:18: internal-ops`
+  },
+  "Critical Findings": {
+    icon: "⚡",
+    content: `CRITICAL FINDINGS
+
+═══════════════════════════════════════════════
+
+DATA EXFILTRATION DETECTED:
+  User: rishab.sen
+  Time: 21:04
+  Size: 18.6 GB
+  Destination: 203.0.113.45 (external IP)
+
+═══════════════════════════════════════════════
+
+SUSPICIOUS LATE ACTIVITY:
+  ZIP → EXPORT → COMMIT sequence
+  All actions performed in quick succession
+  No authorization logs for external transfer
+
+═══════════════════════════════════════════════
+
+UNAUTHORIZED ENTITY:
+  ghostid_41 modifies:
+    • main.py
+    • security.c
+    • neural_ctrl.c
+  
+  Activity time: 22:11 - 22:31
+  No prior login record
+  No VPN connection logged
+
+═══════════════════════════════════════════════
+
+INVESTIGATION QUESTIONS:
+  1. Who initiated the breach?
+  2. Was ghostid_41 an external attacker or compromised account?
+  3. What data was included in nb_v4_backup.zip?
+  4. Why was external VPN access allowed at 21:03?`
+  },
+  "Control Loop Config": {
+    icon: "⚙️",
+    content: `# NeuroBand v4 Control Loop Configuration
+
+neural_output_mode = adaptive
+feedback_channel = active
+loop_gain = variable
+stimulation_profile = dynamic
+safety_override = permitted
+control_latency_ms = 12
+controller_revision = NB4_CTRL_A3
+firmware_channel = production
+
+═══════════════════════════════════════════════
+⚠️ GhostID Implication:
+═══════════════════════════════════════════════
+
+The device can increase neural stimulation dynamically.
+
+RISK ASSESSMENT:
+• Adaptive mode allows real-time adjustments
+• No manual approval required for intensity changes
+• Dynamic stimulation profile enables uncapped scaling
+• Safety override = permitted (bypasses hard limits)`
+  },
+  "Safety Limits Config": {
+    icon: "🛡️",
+    content: `# Safety Limits Configuration
+
+max_output_current = 42
+max_stimulation_duration = 120s
+auto_shutdown_threshold = dynamic
+shutdown_delay = 15s
+manual_override = enabled
+override_clear_required = false
+limit_profile = clinical_test_mode
+
+═══════════════════════════════════════════════
+⚠️ GhostID Implication:
+═══════════════════════════════════════════════
+
+Manual overrides can bypass automatic safety thresholds.
+
+RISK ASSESSMENT:
+• manual_override = enabled (allows threshold bypass)
+• override_clear_required = false (no approval needed)
+• auto_shutdown_threshold = dynamic (not fixed)
+• shutdown_delay = 15s (dangerous delay window)
+• clinical_test_mode profile (less restrictive limits)`
+  },
+  "Feedback Monitor Config": {
+    icon: "📡",
+    content: `# Neural Feedback Monitoring
+
+sensor_mode = continuous
+feedback_noise_filter = disabled
+spike_detection = passive
+feedback_sampling_rate = 1000hz
+shutdown_trigger = external
+warning_escalation = delayed
+
+═══════════════════════════════════════════════
+⚠️ GhostID Implication:
+═══════════════════════════════════════════════
+
+Neural spike detection relies on external shutdown triggers.
+
+RISK ASSESSMENT:
+• feedback_noise_filter = disabled (raw data, no filtering)
+• spike_detection = passive (not actively monitoring)
+• shutdown_trigger = external (requires external command)
+• warning_escalation = delayed (slow response to danger)
+
+CRITICAL ISSUE:
+System cannot self-initiate emergency shutdown during
+neural spike events. Depends on external trigger that
+may fail or be delayed.`
+  },
+  "Shutdown Logic Patch": {
+    icon: "🩹",
+    content: `# Patch Reference
+
+patch_id: prod_hotfix_ghost41
+author_tag: ghost41
+
+changes:
+  - disable immediate shutdown
+  - extend spike tolerance window
+  - suppress warning escalation
+
+deployment_mode: temporary_override
+
+═══════════════════════════════════════════════
+⚠️ GhostID Implication:
+═══════════════════════════════════════════════
+
+Safety shutdown response time has been extended.
+
+PATCH ANALYSIS:
+This patch fundamentally compromises the safety system:
+
+1. IMMEDIATE SHUTDOWN DISABLED
+   Normal behavior: Instant cutoff on critical threshold
+   Patched behavior: Delayed response allowing continued operation
+
+2. SPIKE TOLERANCE EXTENDED
+   Normal window: 50ms max spike duration
+   Patched window: Unknown extended duration
+   
+3. WARNING SUPPRESSION
+   Escalation alerts delayed or hidden from operators
+
+DEPLOYMENT STATUS: temporary_override
+⚠️ This patch should have been removed before production
+⚠️ No removal date logged
+⚠️ Author: ghost41 (UNAUTHORIZED ENTITY)`
+  },
+  "Architecture Notes": {
+    icon: "📝",
+    content: `NeuroBand v4 Architecture Review Notes
+
+═══════════════════════════════════════════════
+
+EXPORT REQUEST
+Export requested for architecture inspection.
+
+ENVIRONMENT:
+  Workstation: wrk04 test workstation
+  Approval: a.m_arch
+  Export Time: 2024-11-03T21:03:44Z
+  Transfer Window: 21:00 — 21:15 UTC
+  Destination: ext_host (unverified)
+  File Size: 2.1 MB
+
+═══════════════════════════════════════════════
+
+⚠️ REMINDER:
+Temporary override must be removed before production 
+deployment. Internal review only.
+
+DO NOT DISTRIBUTE
+
+═══════════════════════════════════════════════
+⚠️ GhostID Implication:
+═══════════════════════════════════════════════
+
+Temporary override approval was granted during system review.
+
+CONCERNS:
+• Override was approved during export window
+• Export destination: ext_host (UNVERIFIED)
+• No documentation of override removal
+• Export coincides with breach timeframe (21:03-21:04)
+• Same approval authority (a.m_arch) in multiple events`
+  }
 };
 
-const EVIDENCE: Evidence[] = [
-    {
-        id: "autopsy_temp", title: "Autopsy Temperature Report", tag: "FORENSIC",
-        content: "Body temperature at discovery: 32.4°C\nRoom temperature: 21°C\nEstimated time of death: ~20:47\nOfficial incident report time: 21:04\n\nConclusion: Body cooling indicates death occurred before the official timeline.\nPossible explanation: Delayed reporting or post-incident intervention."
-    },
-    {
-        id: "neural_log", title: "Neural Activity Log", tag: "SYSTEM LOG",
-        content: "21:02 Neural spike detected\n21:03 Sustained stimulation overload\n21:04 Subject collapse\n\nSystem Status: Limiter response unstable. Shutdown trigger requested.\n\nObservation: Neural stimulation exceeded safe operating threshold."
-    },
-    {
-        id: "limiter_hw", title: "Limiter Hardware Revision (REV-B)", tag: "HARDWARE",
-        content: "Component: Feedback Limiter Module\nExpected revision: REV-A\nInstalled module: REV-B\nSerial mismatch detected.\n\nInspection notes: Limiter board appears modified.\nShutdown response timing may be affected.", isRedHerring: true
-    },
-    {
-        id: "fw_tolerance", title: "Firmware Limiter Tolerance Increase", tag: "FIRMWARE",
-        content: "Module: Limiter Control\nConfiguration update: Tolerance threshold increased 1.0 → 1.3\nAuthor: lsuri_fw\n\nComment: Adjustment applied to reduce false spike detection during calibration."
-    },
-    {
-        id: "override_approval", title: "Override Approval — a.m_arch", tag: "AUTHORIZATION",
-        content: "Temporary safety override approved.\nAuthority: Architecture Division\nAccount: a.m_arch\n\nPurpose: Allow calibration sequence to complete without triggering shutdown protection."
-    },
-    {
-        id: "shutdown_suppressed", title: "Shutdown Escalation Suppressed", tag: "SYSTEM EVENT",
-        content: "Auto-shutdown escalation triggered.\nStatus: SUPPRESSED\nReason: Override state active\n\nNote: Shutdown cannot proceed while architecture override mode remains enabled."
-    },
-    {
-        id: "limiter_instability", title: "Limiter Instability Detected", tag: "DIAGNOSTIC",
-        content: "Spike amplitude exceeded limiter threshold.\nLimiter response delayed.\nOutput channel continued stimulation for several seconds beyond safe limit.\n\nRisk Level: CRITICAL"
-    },
-    {
-        id: "export_log", title: "Export Log — nb_v4_backup.zip", tag: "TRANSFER",
-        content: "File exported: nb_v4_backup.zip\nSource: wrk04\nTransfer path: wrk04 → nas02 → usb07 → external host\nExport authorization: a.m_arch", isRedHerring: true
-    },
-    {
-        id: "arch_risk_memo", title: "Architecture Risk Memo", tag: "MEMO",
-        content: "System stability depends on manual monitoring during test mode.\nTemporary overrides permitted for calibration and tuning.\n\nReminder: Overrides must be removed before production deployment.", isRedHerring: true
-    },
-    {
-        id: "security_access", title: "Security Access Log", tag: "ACCESS",
-        content: "User: vk_sec\nAccess time: 21:05\nSystem accessed: Incident reporting console\nAction performed: Log inspection and system review."
-    },
-    {
-        id: "incident_timestamp", title: "Incident Reporting Timestamp", tag: "OFFICIAL",
-        content: "Reported time of collapse: 21:04\nReported by: Security Operations\n\nNote: Incident timeline recorded after system shutdown attempt."
-    },
-    {
-        id: "ghost_patch", title: "Ghost Patch Reference", tag: "PATCH",
-        content: "Patch ID: prod_hotfix_ghost41\nChanges:\n• extended spike tolerance window\n• delayed shutdown escalation\nAuthor tag: ghost41\nDeployment mode: temporary override"
-    },
-    {
-        id: "maintenance_log", title: "Maintenance Log Entry", tag: "MAINTENANCE",
-        content: "Routine inspection completed. Components cleaned and reseated. No faults reported.\n\nEngineer signature: Rishab Patel", isRedHerring: true
-    },
-    {
-        id: "calibration_notes", title: "Device Calibration Notes", tag: "CALIBRATION",
-        content: "Neural output calibration successful. Minor limiter drift observed but remained within tolerance.\n\nTest environment stable.", isRedHerring: true
-    },
-    {
-        id: "thermal_sensor", title: "Thermal Sensor Calibration", tag: "SENSOR",
-        content: "Room sensors recalibrated earlier in the day. Temperature readings confirmed accurate.", isRedHerring: true
-    },
-    {
-        id: "ghostid_trace", title: "GhostID Trace Fragment", tag: "TRACE",
-        content: "Reference detected: ghost41\nPatch activity linked to temporary override deployment.\nOrigin of patch remains unidentified.\n\nFlag: Unverified system modification.", isRedHerring: true
-    },
+const SUSPECTS = [
+  "Aarya Mehta",
+  "Vikrant Kaul",
+  "Leena Suri",
+  "Rajveer Malhotra",
+  "Baba Ji",
+  "Kavya Sharma",
+  "Arjun Nanda",
+  "GhostID_41"
 ];
 
-const CORRECT: Record<ChainId, { slots: [EvidenceId, EvidenceId, EvidenceId]; dept: string; suspect: string }> = {
-    A: { slots: ["override_approval", "shutdown_suppressed", "neural_log"], dept: "Architecture Division", suspect: "Dr Aarya Mehta" },
-    B: { slots: ["fw_tolerance", "limiter_instability", "ghost_patch"], dept: "Firmware Engineering", suspect: "Leena Suri" },
-    C: { slots: ["autopsy_temp", "security_access", "incident_timestamp"], dept: "Security Operations", suspect: "Vikrant Kaul" },
-};
+// ==================== MAIN COMPONENT ====================
+const PrepRoom = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedSuspects, setSelectedSuspects] = useState([null, null, null]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showLockDialog, setShowLockDialog] = useState(false);
+  const [suspectsLocked, setSuspectsLocked] = useState(false);
+  const [showSubmitPage, setShowSubmitPage] = useState(false);
 
-const DEPTS = ["Architecture Division", "Firmware Engineering", "Security Operations", "Research Team", "Operations"];
-const SUSPECTS = ["Dr Aarya Mehta", "Leena Suri", "Vikrant Kaul", "Kavya Sharma", "GURU JI", "Rajveer Malhotra", "Arjun Nanda"];
-const SLOT_LABELS: Array<"CAUSE" | "ENABLING DECISION" | "CONSEQUENCE"> = ["CAUSE", "ENABLING DECISION", "CONSEQUENCE"];
-const HINTS = [
-    "Review events where safety overrides were requested and approved.",
-    "Track which account authorized the override — it appears in multiple logs.",
-    "Architecture approved override → shutdown suppressed. Firmware raised limiter tolerance → spike amplified. Security accessed logs post-collapse.",
-];
-
-// Tag icons mapping
-const TAG_ICONS: Record<string, string> = {
-  "FORENSIC": "🔬",
-  "SYSTEM LOG": "📋",
-  "HARDWARE": "🔧",
-  "FIRMWARE": "⚙️",
-  "AUTHORIZATION": "🔑",
-  "SYSTEM EVENT": "⚡",
-  "DIAGNOSTIC": "🩺",
-  "TRANSFER": "📤",
-  "MEMO": "📝",
-  "ACCESS": "🔒",
-  "OFFICIAL": "📜",
-  "PATCH": "🧩",
-  "MAINTENANCE": "🛠️",
-  "CALIBRATION": "📐",
-  "SENSOR": "📡",
-  "TRACE": "👻",
-};
-
-function makeChains(): Chain[] {
-  return (["A", "B", "C"] as ChainId[]).map(id => ({
-    id, department: null, suspect: null, verified: false,
-    slots: SLOT_LABELS.map(label => ({ label, evidenceId: null })) as [ChainSlot, ChainSlot, ChainSlot],
-  }));
-}
-
-// ── Error Popup (replaces red marks) ──────────────────────────────────────────
-function ErrorPopup({ message, onClose }: { message: string; onClose: () => void }) {
-  return(
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:T.bgPanel,border:`1px solid ${T.borderHot}`,borderRadius:6,padding:28,maxWidth:420,width:"90%",boxShadow:`0 0 60px ${T.redFaint}, 0 0 120px rgba(204,51,51,0.1)`,textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
-        <div style={{fontFamily:"monospace",fontSize:9,color:T.redDim,letterSpacing:3,marginBottom:10}}>SYSTEM ALERT</div>
-        <div style={{fontFamily:"monospace",fontSize:13,color:T.white,marginBottom:8,lineHeight:1.6}}>{message}</div>
-        <div style={{fontFamily:"monospace",fontSize:10,color:T.whiteDim,marginBottom:18,lineHeight:1.6}}>
-          Re-check your evidence placement, department assignments, and suspect links.
-        </div>
-        <button onClick={onClose} style={{background:T.redFaint,border:`1px solid ${T.borderHot}`,color:T.redBright,fontFamily:"monospace",fontSize:11,padding:"8px 28px",cursor:"pointer",letterSpacing:1.5,borderRadius:3,transition:"all .2s"}}>
-          [ UNDERSTOOD ]
-        </button>
-      </div>
-    </div>
+  const fileNames = Object.keys(FILE_DATA);
+  const filteredFiles = fileNames.filter(name => 
+    name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-}
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
-function Modal({ev,onClose}:{ev:Evidence;onClose:()=>void}){
-  return(
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:T.bgPanel,border:`1px solid ${T.borderHot}`,borderRadius:6,padding:28,maxWidth:520,width:"90%",boxShadow:`0 0 40px ${T.redFaint}`}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-          <span style={{fontSize:18}}>{TAG_ICONS[ev.tag] || "📄"}</span>
-          <div style={{fontFamily:"monospace",fontSize:8,color:T.redDim,letterSpacing:2}}>EVIDENCE CARD — {ev.tag}</div>
-        </div>
-        <div style={{fontFamily:"monospace",fontSize:14,color:T.white,marginBottom:12,borderBottom:`1px solid ${T.border}`,paddingBottom:10,fontWeight:"bold"}}>{ev.title}</div>
-        <pre style={{fontFamily:"monospace",fontSize:11,color:T.whiteDim,whiteSpace:"pre-wrap",margin:0,lineHeight:1.8}}>{ev.content}</pre>
-        {ev.isRedHerring&&<div style={{marginTop:12,fontSize:9,color:T.amber,letterSpacing:1,display:"flex",alignItems:"center",gap:6}}>
-          <span>⚠️</span> UNCLASSIFIED — relevance unconfirmed
-        </div>}
-        <button onClick={onClose} style={{marginTop:18,background:T.redFaint,border:`1px solid ${T.borderMid}`,color:T.red,fontFamily:"monospace",fontSize:11,padding:"7px 20px",cursor:"pointer",letterSpacing:1,borderRadius:3}}>[ CLOSE ]</button>
-      </div>
-    </div>
-  );
-}
-
-// ── GhostID Panel ─────────────────────────────────────────────────────────────
-function GhostIdPanel({ghostActive,onToggle}:{ghostActive:boolean;onToggle:()=>void}){
-  return(
-    <div style={{border:`1px solid ${ghostActive?T.cyan:T.border}`,borderRadius:4,padding:12,background:ghostActive?T.cyanDim:T.bgDeep,marginTop:12,transition:"all .3s"}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-        <Image src={ghostIdImage} alt="GhostID" style={{width:40,height:40,borderRadius:4,border:`1px solid ${ghostActive?T.cyan:T.borderMid}`,objectFit:"cover"}} />
-        <div>
-          <div style={{fontSize:9,color:ghostActive?T.cyan:T.red,letterSpacing:2,fontFamily:"monospace",fontWeight:"bold"}}>GHOSTID_41</div>
-          <div style={{fontSize:7,color:T.whiteGhost,letterSpacing:1,fontFamily:"monospace"}}>INTELLIGENCE MODULE</div>
-        </div>
-        <div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:ghostActive?T.cyan:T.redDim,boxShadow:ghostActive?`0 0 8px ${T.cyan}`:"none"}} />
-      </div>
-      <div style={{fontSize:9,color:T.whiteDim,lineHeight:1.7,marginBottom:8,fontFamily:"monospace",fontStyle:"italic"}}>
-        "Read behavior, not comments."
-      </div>
-      <div style={{fontSize:8,color:T.whiteGhost,lineHeight:1.6,fontFamily:"monospace",marginBottom:10}}>
-        {ghostActive 
-          ? "🟢 Ghost mode active — evidence tags highlighted. Look for connections between override approvals, firmware changes, and security actions."
-          : "Ask the right questions to proceed. Activate Ghost mode for pattern hints."}
-      </div>
-      <button onClick={onToggle}
-        style={{width:"100%",background:"transparent",border:`1px solid ${ghostActive?T.cyan:T.borderMid}`,color:ghostActive?T.cyan:T.redDim,fontFamily:"monospace",fontSize:9,padding:"6px",cursor:"pointer",letterSpacing:1,borderRadius:3,transition:"all .2s"}}>
-        {ghostActive ? "[ DEACTIVATE GHOST MODE ]" : "[ ACTIVATE GHOST MODE ]"}
-      </button>
-    </div>
-  );
-}
-
-// ── Drop Slot (NO red/green borders on wrong — just neutral) ──────────────────
-function Slot({slot,verified,onDrop,onClear,onInspect,ghostActive}:
-  {slot:ChainSlot;verified:boolean;onDrop:(id:EvidenceId)=>void;onClear:()=>void;onInspect:(ev:Evidence)=>void;ghostActive:boolean}){
-  const [over,setOver]=useState(false);
-  const ev=slot.evidenceId?EVIDENCE.find(e=>e.id===slot.evidenceId):null;
-  // Only show green on verified, otherwise neutral border
-  const bc=verified?T.green:over?T.borderHot:T.border;
-  return(
-    <div onDragOver={e=>{e.preventDefault();setOver(true)}} onDragLeave={()=>setOver(false)}
-      onDrop={e=>{e.preventDefault();setOver(false);const id=e.dataTransfer.getData("evidenceId");if(id)onDrop(id);}}
-      style={{flex:1,minHeight:90,border:`1px dashed ${bc}`,borderRadius:4,padding:10,background:over?T.redFaint:"transparent",transition:"all .15s",display:"flex",flexDirection:"column",gap:5}}>
-      <div style={{fontFamily:"monospace",fontSize:8,color:T.redDim,letterSpacing:1.5,display:"flex",alignItems:"center",gap:4}}>
-        <span>{slot.label==="CAUSE"?"🔴":slot.label==="ENABLING DECISION"?"🟡":"🔵"}</span>
-        {slot.label}
-      </div>
-      {ev?(
-        <>
-          <div onClick={()=>onInspect(ev)} style={{fontFamily:"monospace",fontSize:10,color:ghostActive?T.cyan:T.white,cursor:"pointer",lineHeight:1.5,flex:1,display:"flex",alignItems:"center",gap:5}}>
-            <span style={{fontSize:14}}>{TAG_ICONS[ev.tag]||"📄"}</span>
-            {ev.title}
-          </div>
-          {!verified&&<button onClick={onClear} style={{background:"transparent",border:"none",color:T.whiteGhost,fontSize:9,fontFamily:"monospace",cursor:"pointer",padding:0,textAlign:"left",display:"flex",alignItems:"center",gap:3}}>
-            ✕ clear
-          </button>}
-        </>
-      ):(
-        <div style={{fontFamily:"monospace",fontSize:9,color:T.whiteGhost,fontStyle:"italic",flex:1,display:"flex",alignItems:"center",gap:4}}>
-          <span style={{fontSize:14,opacity:0.3}}>📥</span> drop evidence here
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Final Questions ───────────────────────────────────────────────────────────
-function FinalQs({onDone}:{onDone:(pts:number)=>void}){
-  const [a1,setA1]=useState("");const [a2,setA2]=useState("");const [a3,setA3]=useState("");
-  const [res,setRes]=useState<{r1:boolean;r2:boolean;pts3:number}|null>(null);
-  const [showError,setShowError]=useState(false);
-  const submit=()=>{
-    const r1=a1.toLowerCase().includes("neural overload")||(a1.toLowerCase().includes("neural")&&a1.toLowerCase().includes("overload"));
-    const r2=a2.toLowerCase().includes("a.m_arch")||(a2.toLowerCase().includes("architecture")&&a2.toLowerCase().includes("override"));
-    const l=a3.toLowerCase();
-    const h=[l.includes("architecture")||l.includes("override"),l.includes("firmware")||l.includes("limiter"),l.includes("security")||l.includes("reporting")||l.includes("delay")].filter(Boolean).length;
-    const pts3=h===3?50:h===2?35:h===1?15:0;
-    const total=(r1?40:0)+(r2?40:0)+pts3;
-    if(total<50){
-      setShowError(true);
-      return;
-    }
-    const r={r1,r2,pts3};setRes(r);onDone((r1?40:0)+(r2?40:0)+pts3);
-  };
-  const inp=(ok?:boolean):React.CSSProperties=>({width:"100%",background:T.bgDeep,border:`1px solid ${res?(ok?T.green:T.amber):T.border}`,borderRadius:4,padding:"8px 12px",fontFamily:"monospace",fontSize:11,color:T.white,outline:"none",boxSizing:"border-box"});
-  return(
-    <div style={{border:`1px solid ${T.borderMid}`,borderRadius:6,padding:22,background:T.bgDeep,marginTop:18}}>
-      {showError&&<ErrorPopup message="Some answers appear incorrect or incomplete. Review your analysis and try again." onClose={()=>setShowError(false)}/>}
-      <div style={{fontFamily:"monospace",fontSize:9,color:T.red,letterSpacing:2,marginBottom:14,borderBottom:`1px solid ${T.border}`,paddingBottom:8,display:"flex",alignItems:"center",gap:6}}>
-        <span style={{fontSize:14}}>📊</span> FINAL ANALYSIS QUESTIONS
-      </div>
-      {[
-        {n:"Q1",pts:40,q:"What technical condition directly caused Rishab's death?",v:a1,sv:setA1,ok:res?.r1,ans:"Neural overload"},
-        {n:"Q2",pts:40,q:"Which system decision prevented automatic shutdown during the neural spike escalation?",v:a2,sv:setA2,ok:res?.r2,ans:"Architecture override approval (a.m_arch)"},
-      ].map(f=>(
-        <div key={f.n} style={{marginBottom:16}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-            <span style={{fontFamily:"monospace",fontSize:11,color:T.whiteDim}}>{f.n}. {f.q}</span>
-            <span style={{fontFamily:"monospace",fontSize:9,color:T.redDim,whiteSpace:"nowrap"}}>{f.pts} pts</span>
-          </div>
-          <input value={f.v} onChange={e=>f.sv(e.target.value)} disabled={!!res} placeholder="Short text answer…" style={inp(f.ok)}/>
-          {res&&<div style={{fontFamily:"monospace",fontSize:9,color:f.ok?T.green:T.amber,marginTop:3,display:"flex",alignItems:"center",gap:4}}>
-            {f.ok?<span>✅ +{f.pts} pts</span>:<span>💡 Hint: {f.ans}</span>}
-          </div>}
-        </div>
-      ))}
-      <div style={{marginBottom:16}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-          <span style={{fontFamily:"monospace",fontSize:11,color:T.whiteDim}}>Q3. Explain how three departments interfered with safety mechanisms. (≤150 chars)</span>
-          <span style={{fontFamily:"monospace",fontSize:9,color:T.redDim,whiteSpace:"nowrap"}}>50 pts</span>
-        </div>
-        <textarea value={a3} onChange={e=>{if(e.target.value.length<=150)setA3(e.target.value)}} disabled={!!res} rows={3} placeholder="Architecture… Firmware… Security…"
-          style={{...inp(res?res.pts3>=30:undefined),resize:"none"}}/>
-        <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
-          <span style={{fontFamily:"monospace",fontSize:9,color:T.whiteGhost}}>{a3.length}/150</span>
-          {res&&<span style={{fontFamily:"monospace",fontSize:9,color:res.pts3>=30?T.green:T.amber}}>{res.pts3>0?`+${res.pts3} pts`:"💡 Mention all three departments"}</span>}
-        </div>
-      </div>
-      {!res?(
-        <button onClick={submit} disabled={!a1.trim()||!a2.trim()||!a3.trim()}
-          style={{background:a1&&a2&&a3?T.redFaint:"transparent",border:`1px solid ${a1&&a2&&a3?T.borderHot:T.border}`,color:a1&&a2&&a3?T.redBright:T.whiteGhost,fontFamily:"monospace",fontSize:11,padding:"9px 24px",cursor:a1&&a2&&a3?"pointer":"not-allowed",letterSpacing:1.5,opacity:a1&&a2&&a3?1:.4,borderRadius:3}}>
-          [ SUBMIT ANALYSIS ]
-        </button>
-      ):(
-        <div style={{fontFamily:"monospace",fontSize:11,color:T.green,borderTop:`1px solid ${T.border}`,paddingTop:10,display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:16}}>✅</span> ANALYSIS SUBMITTED — {(res.r1?40:0)+(res.r2?40:0)+res.pts3} pts earned
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
-function Task6(){
-  const [chains,setChains]=useState<Chain[]>(makeChains());
-  const [modalEv,setModalEv]=useState<Evidence|null>(null);
-  const [allOk,setAllOk]=useState(false);
-  const [hintUsed,setHintUsed]=useState(0);
-  const [hintText,setHintText]=useState("");
-  const [score,setScore]=useState(0);
-  const [phase,setPhase]=useState<"chains"|"questions"|"done">("chains");
-  const [ghostActive,setGhostActive]=useState(false);
-  const [errorPopup,setErrorPopup]=useState<string|null>(null);
-  const [attempts,setAttempts]=useState(0);
-
-  // Any evidence can go in any chain
-  const drop=useCallback((ci:number,si:number,id:EvidenceId)=>{
-    setChains(p=>p.map((c,cI)=>cI!==ci?c:{...c,slots:c.slots.map((s,sI)=>sI!==si?s:{...s,evidenceId:id}) as [ChainSlot,ChainSlot,ChainSlot]}));
-  },[]);
-  const clear=useCallback((ci:number,si:number)=>{
-    setChains(p=>p.map((c,cI)=>cI!==ci?c:{...c,slots:c.slots.map((s,sI)=>sI!==si?s:{...s,evidenceId:null}) as [ChainSlot,ChainSlot,ChainSlot]}));
-  },[]);
-
-  // Validate with popup instead of red marks
-  const validate=()=>{
-    setAttempts(a=>a+1);
-    const upd=chains.map(c=>({...c,verified:c.slots.every((s,i)=>s.evidenceId===CORRECT[c.id].slots[i])&&c.department===CORRECT[c.id].dept&&c.suspect===CORRECT[c.id].suspect}));
-    setChains(upd);
-    const ok=upd.every(c=>c.verified);
-    setAllOk(ok);
-    if(ok){
-      // Points: base 250, minus 15 per extra attempt
-      const bonus=Math.max(0, 250 - (attempts * 15));
-      setScore(s=>s+bonus);
-    } else {
-      const wrongCount=upd.filter(c=>!c.verified).length;
-      setErrorPopup(`${wrongCount} chain${wrongCount>1?"s":""} could not be verified. Something doesn't match — re-examine your evidence placement, department, and suspect assignments.`);
-      // Reset verified status so no red/green shows
-      setChains(upd.map(c=>({...c,verified:false})));
+  const handleAddSuspect = (suspect) => {
+    const emptyIndex = selectedSuspects.findIndex(s => s === null);
+    if (emptyIndex !== -1) {
+      const newSuspects = [...selectedSuspects];
+      newSuspects[emptyIndex] = suspect;
+      setSelectedSuspects(newSuspects);
+      setShowAddModal(false);
     }
   };
 
-const useHint=()=>{
-  if(hintUsed>=3)return;
-  const cost=[15,25,40][hintUsed];
-  setScore(s=>s-cost);setHintText(HINTS[hintUsed]);setHintUsed(h=>h+1);
-};
+  const handleRemoveSuspect = (index) => {
+    if (!suspectsLocked) {
+      const newSuspects = [...selectedSuspects];
+      newSuspects[index] = null;
+      setSelectedSuspects(newSuspects);
+    }
+  };
 
-const ready=chains.every(c=>c.slots.every(s=>s.evidenceId)&&c.department&&c.suspect);
+  const handleLockConfirm = () => {
+    setSuspectsLocked(true);
+    setShowLockDialog(false);
+  };
 
-  // Count placed evidence
-  const placedIds=new Set(chains.flatMap(c=>c.slots.map(s=>s.evidenceId).filter(Boolean)));
+  const suspectCount = selectedSuspects.filter(s => s !== null).length;
 
-  return(
-    <div style={{minHeight:"100vh",background:T.bg,color:T.whiteDim,fontFamily:"monospace"}}>
-      <style>{`
-        *{box-sizing:border-box}
-        ::-webkit-scrollbar{width:6px}
-        ::-webkit-scrollbar-track{background:${T.bg}}
-        ::-webkit-scrollbar-thumb{background:${T.borderMid};border-radius:3px}
-        ::-webkit-scrollbar-thumb:hover{background:${T.borderHot}}
-        select option{background:${T.bgPanel};color:${T.whiteDim}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-        @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
-        @keyframes glitch{0%{transform:translate(0)}20%{transform:translate(-2px,1px)}40%{transform:translate(1px,-1px)}60%{transform:translate(-1px,2px)}80%{transform:translate(2px,-1px)}100%{transform:translate(0)}}
-        .fu{animation:fadeUp .3s ease both}
-        .blink{animation:blink 1.1s step-start infinite}
-        .pulse{animation:pulse 2s ease infinite}
-        .glitch:hover{animation:glitch .3s ease}
-        button:hover{opacity:.85!important}
-      `}</style>
-
-        {/* CRT scanlines */}
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:1,backgroundImage:`repeating-linear-gradient(transparent,transparent 2px,${T.scan} 2px,${T.scan} 4px)`}}/>
-
-      {errorPopup&&<ErrorPopup message={errorPopup} onClose={()=>setErrorPopup(null)}/>}
-      {modalEv&&<Modal ev={modalEv} onClose={()=>setModalEv(null)}/>}
-
-      <div style={{maxWidth:1200,margin:"0 auto",padding:"0",position:"relative",zIndex:2}}>
-
-        {/* ── Top bar ── */}
-        <div style={{background:T.bgDeep,borderBottom:`1px solid ${T.border}`,padding:"10px 20px",display:"flex",alignItems:"center",gap:12}}>
-          <Image src={ghostIdImage} alt="Ghost" style={{width:24,height:24,borderRadius:3,opacity:0.7}} />
-          <span style={{fontSize:9,color:T.redDim,letterSpacing:3}}>INTERNAL OPS CONSOLE // CASE #131</span>
-          <span style={{color:T.border}}>|</span>
-          <span style={{fontSize:9,color:T.whiteGhost,letterSpacing:1}}>NEUROBAND INVESTIGATION — ROUND 2</span>
-          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:14}}>
-            <span style={{fontSize:9,color:T.whiteGhost}}>ATTEMPTS: <span style={{color:T.whiteDim}}>{attempts}</span></span>
-            <span style={{fontSize:9,color:T.redDim}}>
-              SCORE: <span style={{color:score>=0?T.green:T.redBright,fontWeight:"bold",fontSize:11}}>{score>=0?"+":""}{score}</span> pts
-            </span>
+  // Submit Page View
+  if (showSubmitPage) {
+    return (
+      <div style={styles.container}>
+        <style>{cssStyles}</style>
+        <div className="scanlines"></div>
+        <div style={styles.submitPage}>
+          <div style={styles.submitCard}>
+            <div style={styles.submitIcon}>🔍</div>
+            <h1 style={styles.submitTitle}>EVIDENCE SUBMISSION</h1>
+            <p style={styles.submitText}>
+              To submit your evidence, please fill out the form:
+            </p>
+            <button
+              style={styles.submitButton}
+              onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLSebzfyXR9SVEXHpeZUGlQETAu-g0BmS84UFfpiuLKKvjkXXaQ/viewform?usp=header', '_blank')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#ff1111';
+                e.currentTarget.style.boxShadow = '0 0 30px #ff111188';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#cc0000';
+                e.currentTarget.style.boxShadow = '0 0 20px #cc000066';
+              }}
+            >
+              OPEN EVIDENCE FORM
+            </button>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* ── Breadcrumb + title ── */}
-        <div style={{padding:"16px 20px 0"}}>
-          <div style={{fontSize:9,color:T.redDim,letterSpacing:1,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-            <span>📁</span> CASE #131 / TASK 6 / INCIDENT SYNTHESIS
-          </div>
-          <div style={{fontSize:24,color:T.white,letterSpacing:3,fontWeight:"bold",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:28}}>🔗</span> INCIDENT SYNTHESIS BOARD
-          </div>
-          <div style={{display:"flex",gap:24,alignItems:"center",flexWrap:"wrap",marginBottom:14,fontSize:9,color:T.whiteGhost,letterSpacing:1}}>
-            <span>🎯 OBJECTIVE: <span style={{color:T.white}}>Reconstruct three causal failure chains</span></span>
-            <span style={{color:T.border}}>|</span>
-            <span>{allOk?"✅":"⏳"} CLEARANCE: <span style={{color:allOk?T.green:T.amber}}>{allOk?"COMPLETE":"INCOMPLETE"}</span></span>
-            <span style={{color:T.border}}>|</span>
-            <span>💡 HINTS: <span style={{color:T.whiteDim}}>{hintUsed}/3</span></span>
-            <span style={{color:T.border}}>|</span>
-            <span>📦 PLACED: <span style={{color:T.whiteDim}}>{placedIds.size}/{EVIDENCE.length}</span></span>
-          </div>
-          <div style={{height:1,background:`linear-gradient(to right, ${T.borderHot}, ${T.border}, transparent)`,marginBottom:16}}/>
-        </div>
+  // Main Prep Room View
+  return (
+    <div style={styles.container}>
+      <style>{cssStyles}</style>
+      <div className="scanlines"></div>
+      
+      {/* Header */}
+      <div style={styles.header}>
+        <h1 style={styles.mainTitle}>TASK 6: PREP ROOM</h1>
+      </div>
 
-        {/* ── Main layout ── */}
-        <div style={{display:"grid",gridTemplateColumns:"280px 1fr",gap:0}}>
+      {/* Main Content */}
+      <div style={styles.mainContent}>
+        {/* Left Column - File Repository */}
+        <div style={styles.leftColumn}>
+          <h2 style={styles.columnTitle}>
+            📁 FILE REPOSITORY
+          </h2>
+          
+          {/* Search Bar */}
+          <input
+            type="text"
+            placeholder="[Search 🔍]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={styles.searchBar}
+          />
 
-          {/* ── Left: Evidence Archive ── */}
-          <div style={{borderRight:`1px solid ${T.border}`,padding:"0 14px 20px 20px"}}>
-            <div style={{fontSize:9,color:T.red,letterSpacing:2,marginBottom:10,paddingBottom:6,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:5}}>
-              <span>🗂️</span> EVIDENCE ARCHIVE
-            </div>
-            <div style={{fontSize:8,color:T.whiteGhost,marginBottom:10,display:"flex",alignItems:"center",gap:4}}>
-              <span>👆</span> Click to inspect · Drag to any chain slot
-            </div>
-
-            <div style={{maxHeight:"48vh",overflowY:"auto",paddingRight:4}}>
-              {EVIDENCE.map(ev=>{
-                const isPlaced=placedIds.has(ev.id);
-                return(
-                <div key={ev.id} draggable onDragStart={e=>e.dataTransfer.setData("evidenceId",ev.id)} onClick={()=>setModalEv(ev)}
-                  style={{cursor:"grab",background:isPlaced?"rgba(34,170,68,0.05)":T.bgPanel,border:`1px solid ${isPlaced?T.greenDim:ev.isRedHerring?T.amberDim:ghostActive&&!ev.isRedHerring?T.cyanDim:T.border}`,borderRadius:4,padding:"7px 10px",marginBottom:5,display:"flex",alignItems:"center",gap:8,userSelect:"none",transition:"all .2s",opacity:isPlaced?0.6:1}}
-                  onMouseEnter={e=>e.currentTarget.style.borderColor=ev.isRedHerring?T.amber:ghostActive?T.cyan:T.borderHot}
-                  onMouseLeave={e=>e.currentTarget.style.borderColor=isPlaced?T.greenDim:ev.isRedHerring?T.amberDim:ghostActive&&!ev.isRedHerring?T.cyanDim:T.border}>
-                  <span style={{fontSize:16,flexShrink:0}}>{TAG_ICONS[ev.tag]||"📄"}</span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <span style={{fontSize:7,color:ev.isRedHerring?T.amber:ghostActive?T.cyan:T.red,background:ev.isRedHerring?"#1a1000":ghostActive?T.cyanDim:T.redFaint,border:`1px solid ${ev.isRedHerring?T.amberDim:ghostActive?T.cyanDim:T.borderMid}`,padding:"1px 5px",borderRadius:2,letterSpacing:.8,display:"inline-block",marginBottom:2}}>
-                      {ev.tag}
-                    </span>
-                    <div style={{fontFamily:"monospace",fontSize:9,color:ev.isRedHerring?T.amber:ghostActive?T.cyan:T.whiteDim,lineHeight:1.4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ev.title}</div>
-                  </div>
-                  {isPlaced&&<span style={{fontSize:10,color:T.green,flexShrink:0}}>✓</span>}
-                </div>
-              );})}
-            </div>
-
-            {/* Evidence Tags section */}
-            <div style={{marginTop:14,borderTop:`1px solid ${T.border}`,paddingTop:10}}>
-              <div style={{fontSize:8,color:T.red,letterSpacing:1.5,marginBottom:6,display:"flex",alignItems:"center",gap:4}}>
-                <span>🏷️</span> KEY EVIDENCE TAGS
+          {/* File List */}
+          <div style={styles.fileList}>
+            {filteredFiles.map((fileName) => (
+              <div
+                key={fileName}
+                data-testid={`file-${fileName.toLowerCase().replace(/\s+/g, '-')}`}
+                style={{
+                  ...styles.fileItem,
+                  ...(selectedFile === fileName ? styles.fileItemSelected : {})
+                }}
+                onClick={() => setSelectedFile(fileName)}
+                onMouseEnter={(e) => {
+                  if (selectedFile !== fileName) {
+                    e.currentTarget.style.borderColor = '#cc2222';
+                    e.currentTarget.style.background = '#1a0808';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedFile !== fileName) {
+                    e.currentTarget.style.borderColor = '#3a1818';
+                    e.currentTarget.style.background = '#241010';
+                  }
+                }}
+              >
+                <span style={styles.fileIcon}>{FILE_DATA[fileName].icon}</span>
+                <span style={styles.fileName}>{fileName}</span>
               </div>
-              {["autopsy_temp","neural_log","fw_tolerance","override_approval","shutdown_suppressed","security_access"].map(id=>{
-                const e=EVIDENCE.find(x=>x.id===id)!;
-                return <div key={id} style={{fontSize:9,color:T.red,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
-                  <span style={{fontSize:12}}>{TAG_ICONS[e.tag]}</span>
-                  <span style={{color:T.whiteDim}}>{e.title}</span>
-                </div>;
+            ))}
+          </div>
+        </div>
+
+        {/* Right Column - Interrogation Board */}
+        <div style={styles.rightColumn}>
+          <h2 style={styles.columnTitle}>
+            🧠 INTERROGATION BOARD
+          </h2>
+
+          <div style={styles.suspectCounter}>
+            SELECTED SUSPECTS ({suspectCount}/3)
+          </div>
+
+          <button
+            data-testid="add-suspect-button"
+            style={styles.addButton}
+            onClick={() => suspectCount < 3 && !suspectsLocked && setShowAddModal(true)}
+            disabled={suspectCount >= 3 || suspectsLocked}
+            onMouseEnter={(e) => {
+              if (suspectCount < 3 && !suspectsLocked) {
+                e.currentTarget.style.borderColor = '#ff3333';
+                e.currentTarget.style.color = '#ff3333';
+                e.currentTarget.style.background = '#1a0505';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (suspectCount < 3 && !suspectsLocked) {
+                e.currentTarget.style.borderColor = '#cc1a1a';
+                e.currentTarget.style.color = '#cc1a1a';
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+          >
+            [ + Add Suspect ]
+          </button>
+
+          {/* Suspect Slots */}
+          <div style={styles.suspectSlots}>
+            {selectedSuspects.map((suspect, index) => (
+              <div
+                key={index}
+                data-testid={`suspect-slot-${index + 1}`}
+                style={{
+                  ...styles.suspectSlot,
+                  ...(suspect ? styles.suspectSlotFilled : {}),
+                  ...(suspectsLocked ? styles.suspectSlotLocked : {})
+                }}
+              >
+                {suspect ? (
+                  <>
+                    <span style={styles.suspectName}>{suspect}</span>
+                    {!suspectsLocked && (
+                      <button
+                        data-testid={`remove-suspect-${index + 1}`}
+                        style={styles.removeButton}
+                        onClick={() => handleRemoveSuspect(index)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#ff3333';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#7a4a4a';
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span style={styles.emptySlot}>[ Suspect Slot {index + 1} ]<br/>(Empty)</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom Bar */}
+          <div style={styles.bottomBar}>
+            <button
+              data-testid="lock-suspects-button"
+              style={{
+                ...styles.actionButton,
+                ...(suspectCount < 3 || suspectsLocked ? styles.actionButtonDisabled : {})
+              }}
+              onClick={() => suspectCount === 3 && !suspectsLocked && setShowLockDialog(true)}
+              disabled={suspectCount < 3 || suspectsLocked}
+              onMouseEnter={(e) => {
+                if (suspectCount === 3 && !suspectsLocked) {
+                  e.currentTarget.style.background = '#1a0808';
+                  e.currentTarget.style.boxShadow = '0 0 20px #ff333366';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (suspectCount === 3 && !suspectsLocked) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
+            >
+              {suspectsLocked ? '🔒 SUSPECTS LOCKED' : '[ LOCK SUSPECTS ]'}
+            </button>
+
+            <button
+              data-testid="submit-plan-button"
+              style={{
+                ...styles.actionButton,
+                ...(!suspectsLocked ? styles.actionButtonDisabled : {})
+              }}
+              onClick={() => suspectsLocked && setShowSubmitPage(true)}
+              disabled={!suspectsLocked}
+              onMouseEnter={(e) => {
+                if (suspectsLocked) {
+                  e.currentTarget.style.background = '#1a0808';
+                  e.currentTarget.style.boxShadow = '0 0 20px #ff333366';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (suspectsLocked) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
+            >
+              [ SUBMIT PLAN ]
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* File Content Modal */}
+      {selectedFile && (
+        <div
+          style={styles.modalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedFile(null);
+            }
+          }}
+        >
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <div style={styles.modalHeaderLeft}>
+                <span style={styles.modalIcon}>{FILE_DATA[selectedFile].icon}</span>
+                <h3 style={styles.modalTitle}>{selectedFile}</h3>
+              </div>
+              <button
+                data-testid="close-file-modal"
+                style={styles.closeButton}
+                onClick={() => setSelectedFile(null)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#ff3333';
+                  e.currentTarget.style.color = '#ff3333';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#cc2222';
+                  e.currentTarget.style.color = '#cc2222';
+                }}
+              >
+                ✕ CLOSE
+              </button>
+            </div>
+            <div style={styles.modalBody}>
+              <pre style={styles.fileContent}>{FILE_DATA[selectedFile].content}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Suspect Modal */}
+      {showAddModal && (
+        <div style={styles.modalOverlay} onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowAddModal(false);
+          }
+        }}>
+          <div style={styles.addModalContent}>
+            <h3 style={styles.addModalTitle}>SELECT SUSPECT</h3>
+            <div style={styles.suspectList}>
+              {SUSPECTS.map((suspect) => {
+                const isSelected = selectedSuspects.includes(suspect);
+                return (
+                  <div
+                    key={suspect}
+                    data-testid={`suspect-option-${suspect.toLowerCase().replace(/\s+/g, '-')}`}
+                    style={{
+                      ...styles.suspectOption,
+                      ...(isSelected ? styles.suspectOptionDisabled : {})
+                    }}
+                    onClick={() => !isSelected && handleAddSuspect(suspect)}
+                  >
+                    <span style={styles.radioButton}>{isSelected ? '⊗' : '○'}</span>
+                    <span style={isSelected ? styles.suspectNameDisabled : {}}>{suspect}</span>
+                  </div>
+                );
               })}
             </div>
-
-            {/* GhostID Panel */}
-            <GhostIdPanel ghostActive={ghostActive} onToggle={()=>setGhostActive(g=>!g)} />
-
-            {/* Hint System */}
-            <div style={{marginTop:12,border:`1px solid ${T.border}`,borderRadius:4,padding:12}}>
-              <div style={{fontSize:8,color:T.red,letterSpacing:1.5,marginBottom:6,display:"flex",alignItems:"center",gap:4}}>
-                <span>💡</span> HINT SYSTEM
-              </div>
-              <div style={{fontSize:8,color:T.whiteGhost,marginBottom:8}}>Cost: −15 / −25 / −40 pts per use</div>
-              <button onClick={useHint} disabled={hintUsed>=3}
-                style={{width:"100%",background:hintUsed>=3?"transparent":T.redFaint,border:`1px solid ${hintUsed>=3?T.border:T.borderMid}`,color:hintUsed>=3?T.whiteGhost:T.red,fontFamily:"monospace",fontSize:9,padding:"6px",cursor:hintUsed>=3?"not-allowed":"pointer",letterSpacing:1,borderRadius:3}}>
-                [ REQUEST HINT{hintUsed>=3?" — EXHAUSTED":""} ]
-              </button>
-              {hintText&&<div style={{marginTop:8,fontSize:9,color:T.whiteDim,lineHeight:1.7,borderTop:`1px solid ${T.border}`,paddingTop:8}} className="fu">{hintText}</div>}
-            </div>
-          </div>
-
-          {/* ── Right: Chain Builder ── */}
-          <div style={{padding:"0 20px 20px 18px"}}>
-            <div style={{fontSize:9,color:T.red,letterSpacing:2,marginBottom:14,paddingBottom:6,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:5}}>
-              <span>⛓️</span> FAILURE CHAIN BUILDER — FULL CAUSAL RECONSTRUCTION
-            </div>
-
-            {chains.map((chain,ci)=>{
-              return(
-                <div key={chain.id} className="fu" style={{border:`1px solid ${chain.verified?T.green:T.border}`,borderRadius:6,padding:16,marginBottom:18,background:T.bgPanel,transition:"all .4s",boxShadow:chain.verified?`0 0 20px ${T.greenDim}`:"none"}}>
-                  {/* Chain header */}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                    <span style={{fontSize:13,color:chain.verified?T.green:T.white,letterSpacing:2,display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:16}}>⛓️</span> CHAIN {chain.id}
-                    </span>
-                    {chain.verified&&<span style={{fontSize:9,letterSpacing:1,color:T.green,display:"flex",alignItems:"center",gap:4}}>
-                      <span>✅</span> CHAIN VERIFIED
-                    </span>}
-                  </div>
-
-                  {/* Three slots — any evidence can go anywhere */}
-                  <div style={{display:"flex",gap:8,marginBottom:10}}>
-                    {chain.slots.map((slot,si)=>(
-                      <Slot key={si} slot={slot} verified={chain.verified} ghostActive={ghostActive}
-                        onDrop={id=>drop(ci,si,id)} onClear={()=>clear(ci,si)} onInspect={setModalEv}/>
-                    ))}
-                  </div>
-
-                  <div style={{fontSize:8,color:T.whiteGhost,letterSpacing:1,marginBottom:12,display:"flex",alignItems:"center",gap:4}}>
-                    🔴 [ CAUSE ] ──→ 🟡 [ ENABLING DECISION ] ──→ 🔵 [ CONSEQUENCE ]
-                  </div>
-
-                  {/* Dept + Suspect row */}
-                  <div style={{display:"flex",gap:12}}>
-                    {[
-                      {lbl:"🏢 RESPONSIBLE DEPARTMENT",val:chain.department,opts:DEPTS,   set:(v:string)=>setChains(p=>p.map((c,i)=>i===ci?{...c,department:v}:c))},
-                      {lbl:"🧑‍💼 LINKED SUSPECT",         val:chain.suspect,   opts:SUSPECTS,set:(v:string)=>setChains(p=>p.map((c,i)=>i===ci?{...c,suspect:v}:c))},
-                    ].map(f=>(
-                      <div key={f.lbl} style={{flex:1}}>
-                        <div style={{fontSize:8,color:T.redDim,letterSpacing:1,marginBottom:4}}>{f.lbl}</div>
-                        <select value={f.val||""} onChange={e=>f.set(e.target.value)} disabled={chain.verified}
-                          style={{width:"100%",background:T.bgDeep,border:`1px solid ${T.border}`,color:T.whiteDim,fontFamily:"monospace",fontSize:10,padding:"6px 8px",outline:"none",borderRadius:4}}>
-                          <option value="">-- select --</option>
-                          {f.opts.map(o=><option key={o} value={o}>{o}</option>)}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Validate button */}
-            {!allOk&&(
-              <button onClick={validate} disabled={!ready}
-                style={{background:ready?T.redFaint:"transparent",border:`1px solid ${ready?T.borderHot:T.border}`,color:ready?T.redBright:T.whiteGhost,fontFamily:"monospace",fontSize:12,padding:"10px 30px",cursor:ready?"pointer":"not-allowed",letterSpacing:2,marginBottom:14,display:"flex",alignItems:"center",gap:8,opacity:ready?1:.4,transition:"all .2s",borderRadius:4}}>
-                <span style={{fontSize:16}}>🔍</span> [ VALIDATE CHAINS ]
-              </button>
-            )}
-
-            {/* All verified */}
-            {allOk&&phase==="chains"&&(
-              <div className="fu" style={{border:`1px solid ${T.green}`,borderRadius:6,padding:20,background:T.bgDeep,marginBottom:14,boxShadow:`0 0 30px ${T.greenDim}`}}>
-                <div style={{fontSize:12,color:T.green,letterSpacing:2,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:18}}>✅</span> SYSTEM FAILURE MODEL COMPLETE
-                </div>
-                <div style={{fontSize:10,color:T.whiteDim,lineHeight:1.9,marginBottom:12}}>
-                  Multiple operational decisions contributed to the NeuroBand incident.<br/><br/>
-                  <span style={{color:T.red}}>🔴</span> Architecture Override — shutdown safeguard bypassed<br/>
-                  <span style={{color:T.red}}>🔴</span> Firmware Instability — limiter tolerance elevated<br/>
-                  <span style={{color:T.red}}>🔴</span> Security Manipulation — incident reporting delayed
-                </div>
-                <div style={{fontSize:8,color:T.border,marginBottom:10}}>─────────────────────────────────────────────────</div>
-                <div style={{fontSize:10,color:T.whiteDim,lineHeight:1.9,marginBottom:16}}>
-                  CONFIRMED INVOLVEMENT<br/><br/>
-                  🏢 Architecture Division → <span style={{color:T.white}}>Dr Aarya Mehta</span><br/>
-                  🏢 Firmware Engineering &nbsp;→ <span style={{color:T.white}}>Leena Suri</span><br/>
-                  🏢 Security Operations &nbsp;→ <span style={{color:T.white}}>Vikrant Kaul</span>
-                </div>
-                <button onClick={()=>setPhase("questions")}
-                  style={{background:T.redFaint,border:`1px solid ${T.borderHot}`,color:T.redBright,fontFamily:"monospace",fontSize:11,padding:"9px 24px",cursor:"pointer",letterSpacing:1.5,borderRadius:4,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:14}}>📊</span> [ PROCEED TO FINAL QUESTIONS ]
-                </button>
-              </div>
-            )}
-
-            {phase==="questions"&&allOk&&(
-              <FinalQs onDone={pts=>{setScore(s=>s+pts);setPhase("done");}}/>
-            )}
-
-            {phase==="done"&&(
-              <div className="fu" style={{border:`1px solid ${T.borderMid}`,borderRadius:6,padding:20,background:T.bgDeep,marginTop:16}}>
-                <div style={{fontSize:11,color:T.green,letterSpacing:2,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:16}}>🎯</span> INCIDENT SYNTHESIS COMPLETE
-                </div>
-                <div style={{fontSize:10,color:T.whiteDim,lineHeight:1.8,marginBottom:14}}>
-                  Key departments implicated: Architecture · Firmware · Security<br/><br/>
-                  Prepare to question the individuals responsible during the interrogation round.
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                  <Image src={ghostIdImage} alt="GhostID" style={{width:32,height:32,borderRadius:4,border:`1px solid ${T.cyan}`}} />
-                  <div style={{fontSize:13,color:T.redBright,letterSpacing:2}} className="blink">
-                    ▶ TASK 7 — INTERROGATION ROOM
-                  </div>
-                </div>
-                <div style={{fontSize:11,color:T.whiteGhost}}>
-                  🏆 FINAL SCORE: <span style={{color:score>=0?T.green:T.redBright,fontWeight:"bold",fontSize:14}}>{score>=0?"+":""}{score} pts</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Lock Confirmation Dialog */}
+      {showLockDialog && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.lockDialog}>
+            <h3 style={styles.lockDialogTitle}>⚠️ CONFIRM LOCK</h3>
+            <p style={styles.lockDialogText}>
+              Once locked, you cannot change your suspect selection. Proceed?
+            </p>
+            <div style={styles.lockDialogButtons}>
+              <button
+                data-testid="cancel-lock"
+                style={styles.cancelButton}
+                onClick={() => setShowLockDialog(false)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#1a0808';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                [ CANCEL ]
+              </button>
+              <button
+                data-testid="confirm-lock"
+                style={styles.confirmButton}
+                onClick={handleLockConfirm}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#2a0808';
+                  e.currentTarget.style.boxShadow = '0 0 20px #ff333366';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#1a0505';
+                  e.currentTarget.style.boxShadow = '0 0 10px #ff333333';
+                }}
+              >
+                [ CONFIRM LOCK ]
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
-export default function Page() {
-  return <Task6 />;
-}
+// ==================== CSS STYLES ====================
+const cssStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+  
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .scanlines::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+`;
+
+// ==================== INLINE STYLES ====================
+const styles = {
+  container: {
+    minHeight: '100vh',
+    background: '#110a0a',
+    color: '#e8c8c8',
+    fontFamily: "'Share Tech Mono', monospace",
+    padding: '20px',
+    position: 'relative'
+  },
+  header: {
+    textAlign: 'center',
+    padding: '20px 0',
+    borderBottom: '2px solid #3a1818',
+    marginBottom: '30px'
+  },
+  mainTitle: {
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '2rem',
+    letterSpacing: '4px',
+    color: '#ff3333',
+    textShadow: '0 0 20px #ff333366',
+    margin: 0
+  },
+  mainContent: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '30px',
+    maxWidth: '1400px',
+    margin: '0 auto'
+  },
+  leftColumn: {
+    background: '#1a0d0d',
+    border: '2px solid #3a1818',
+    borderRadius: '4px',
+    padding: '20px'
+  },
+  rightColumn: {
+    background: '#1a0d0d',
+    border: '2px solid #3a1818',
+    borderRadius: '4px',
+    padding: '20px'
+  },
+  columnTitle: {
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '1.2rem',
+    letterSpacing: '3px',
+    color: '#ff3333',
+    marginBottom: '20px',
+    textAlign: 'center',
+    borderBottom: '1px solid #3a1818',
+    paddingBottom: '10px'
+  },
+  searchBar: {
+    width: '100%',
+    padding: '12px',
+    background: '#241010',
+    border: '1px solid #3a1818',
+    borderRadius: '3px',
+    color: '#e8c8c8',
+    fontFamily: "'Share Tech Mono', monospace",
+    fontSize: '0.9rem',
+    letterSpacing: '1px',
+    marginBottom: '15px',
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  fileList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    maxHeight: '600px',
+    overflowY: 'auto'
+  },
+  fileItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px',
+    background: '#241010',
+    border: '1px solid #3a1818',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  fileItemSelected: {
+    borderColor: '#ff3333',
+    background: '#2a0808',
+    boxShadow: '0 0 15px #ff333333'
+  },
+  fileIcon: {
+    fontSize: '1.2rem'
+  },
+  fileName: {
+    fontSize: '0.85rem',
+    letterSpacing: '1px',
+    color: '#e8c8c8'
+  },
+  suspectCounter: {
+    textAlign: 'center',
+    fontSize: '1rem',
+    letterSpacing: '2px',
+    color: '#ff8800',
+    marginBottom: '15px',
+    padding: '8px',
+    background: '#1a1000',
+    border: '1px solid #3a2810',
+    borderRadius: '3px'
+  },
+  addButton: {
+    width: '100%',
+    padding: '12px',
+    background: 'transparent',
+    border: '1px solid #cc1a1a',
+    borderRadius: '3px',
+    color: '#cc1a1a',
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '0.9rem',
+    letterSpacing: '2px',
+    cursor: 'pointer',
+    marginBottom: '20px',
+    transition: 'all 0.2s'
+  },
+  suspectSlots: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+    marginBottom: '25px'
+  },
+  suspectSlot: {
+    minHeight: '80px',
+    padding: '15px',
+    background: 'transparent',
+    border: '2px dashed #3a1818',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative'
+  },
+  suspectSlotFilled: {
+    background: '#241010',
+    borderStyle: 'solid',
+    borderColor: '#cc1a1a'
+  },
+  suspectSlotLocked: {
+    borderColor: '#ff3333',
+    background: '#1a0505',
+    boxShadow: '0 0 10px #ff333333'
+  },
+  suspectName: {
+    fontSize: '1rem',
+    letterSpacing: '2px',
+    color: '#ff3333',
+    fontFamily: "'Orbitron', monospace"
+  },
+  emptySlot: {
+    color: '#7a4a4a',
+    fontSize: '0.85rem',
+    letterSpacing: '1px',
+    textAlign: 'center',
+    lineHeight: '1.6'
+  },
+  removeButton: {
+    position: 'absolute',
+    right: '10px',
+    top: '10px',
+    background: 'transparent',
+    border: 'none',
+    color: '#7a4a4a',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    padding: '5px 10px',
+    transition: 'color 0.2s'
+  },
+  bottomBar: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '15px',
+    marginTop: '20px'
+  },
+  actionButton: {
+    padding: '14px',
+    background: 'transparent',
+    border: '2px solid #cc1a1a',
+    borderRadius: '4px',
+    color: '#cc1a1a',
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '0.85rem',
+    letterSpacing: '2px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  actionButtonDisabled: {
+    opacity: 0.4,
+    cursor: 'not-allowed',
+    borderColor: '#3a1818',
+    color: '#7a4a4a'
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.85)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    backdropFilter: 'blur(4px)'
+  },
+  modalContent: {
+    background: '#1a0d0d',
+    border: '2px solid #cc1a1a',
+    borderRadius: '6px',
+    width: '90%',
+    maxWidth: '800px',
+    maxHeight: '80vh',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 0 30px #ff333333'
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px',
+    borderBottom: '1px solid #3a1818'
+  },
+  modalHeaderLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  modalIcon: {
+    fontSize: '1.5rem'
+  },
+  modalTitle: {
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '1.2rem',
+    letterSpacing: '2px',
+    color: '#ff3333',
+    margin: 0
+  },
+  closeButton: {
+    padding: '8px 16px',
+    background: 'transparent',
+    border: '1px solid #cc2222',
+    borderRadius: '3px',
+    color: '#cc2222',
+    fontFamily: "'Share Tech Mono', monospace",
+    fontSize: '0.75rem',
+    letterSpacing: '2px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  modalBody: {
+    padding: '20px',
+    overflowY: 'auto',
+    flex: 1
+  },
+  fileContent: {
+    fontFamily: "'Share Tech Mono', monospace",
+    fontSize: '0.85rem',
+    lineHeight: '1.6',
+    color: '#e8c8c8',
+    whiteSpace: 'pre-wrap',
+    wordWrap: 'break-word',
+    margin: 0
+  },
+  addModalContent: {
+    background: '#1a0d0d',
+    border: '2px solid #cc1a1a',
+    borderRadius: '6px',
+    padding: '30px',
+    width: '90%',
+    maxWidth: '500px',
+    maxHeight: '600px',
+    boxShadow: '0 0 30px #ff333333'
+  },
+  addModalTitle: {
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '1.3rem',
+    letterSpacing: '3px',
+    color: '#ff3333',
+    textAlign: 'center',
+    marginBottom: '25px',
+    borderBottom: '1px solid #3a1818',
+    paddingBottom: '15px'
+  },
+  suspectList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    maxHeight: '400px',
+    overflowY: 'auto'
+  },
+  suspectOption: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    padding: '15px',
+    background: '#241010',
+    border: '1px solid #3a1818',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    fontSize: '0.95rem',
+    letterSpacing: '1px'
+  },
+  suspectOptionDisabled: {
+    opacity: 0.4,
+    cursor: 'not-allowed',
+    textDecoration: 'line-through'
+  },
+  suspectNameDisabled: {
+    color: '#7a4a4a'
+  },
+  radioButton: {
+    fontSize: '1.2rem',
+    color: '#cc1a1a'
+  },
+  lockDialog: {
+    background: '#1a0d0d',
+    border: '2px solid #ff8800',
+    borderRadius: '6px',
+    padding: '30px',
+    width: '90%',
+    maxWidth: '450px',
+    boxShadow: '0 0 30px #ff880033'
+  },
+  lockDialogTitle: {
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '1.2rem',
+    letterSpacing: '2px',
+    color: '#ff8800',
+    textAlign: 'center',
+    marginBottom: '20px'
+  },
+  lockDialogText: {
+    fontSize: '0.95rem',
+    lineHeight: '1.6',
+    color: '#e8c8c8',
+    textAlign: 'center',
+    marginBottom: '25px'
+  },
+  lockDialogButtons: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '15px'
+  },
+  cancelButton: {
+    padding: '12px',
+    background: 'transparent',
+    border: '1px solid #7a4a4a',
+    borderRadius: '3px',
+    color: '#7a4a4a',
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '0.85rem',
+    letterSpacing: '2px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  confirmButton: {
+    padding: '12px',
+    background: '#1a0505',
+    border: '2px solid #ff3333',
+    borderRadius: '3px',
+    color: '#ff3333',
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '0.85rem',
+    letterSpacing: '2px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 0 10px #ff333333'
+  },
+  submitPage: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 'calc(100vh - 40px)'
+  },
+  submitCard: {
+    background: '#1a0d0d',
+    border: '2px solid #cc1a1a',
+    borderRadius: '8px',
+    padding: '50px',
+    maxWidth: '600px',
+    textAlign: 'center',
+    boxShadow: '0 0 40px #ff333333'
+  },
+  submitIcon: {
+    fontSize: '4rem',
+    marginBottom: '20px'
+  },
+  submitTitle: {
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '2rem',
+    letterSpacing: '4px',
+    color: '#ff3333',
+    marginBottom: '30px',
+    textShadow: '0 0 20px #ff333366'
+  },
+  submitText: {
+    fontSize: '1.1rem',
+    lineHeight: '1.8',
+    color: '#e8c8c8',
+    marginBottom: '40px',
+    letterSpacing: '1px'
+  },
+  submitButton: {
+    padding: '18px 40px',
+    background: '#cc0000',
+    border: 'none',
+    borderRadius: '4px',
+    color: '#fff',
+    fontFamily: "'Orbitron', monospace",
+    fontSize: '1rem',
+    letterSpacing: '3px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 0 20px #cc000066'
+  }
+};
+
+export default PrepRoom;
