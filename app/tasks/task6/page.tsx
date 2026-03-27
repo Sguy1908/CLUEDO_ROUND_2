@@ -800,8 +800,8 @@ const SUSPECTS = [
 // ==================== MAIN COMPONENT ====================
 const PrepRoom = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedSuspects, setSelectedSuspects] = useState([null, null, null]);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedSuspects, setSelectedSuspects] = useState<(string | null)[]>([null, null, null]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLockDialog, setShowLockDialog] = useState(false);
   const [suspectsLocked, setSuspectsLocked] = useState(false);
@@ -812,7 +812,7 @@ const PrepRoom = () => {
     name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddSuspect = (suspect) => {
+  const handleAddSuspect = (suspect: string) => {
     const emptyIndex = selectedSuspects.findIndex(s => s === null);
     if (emptyIndex !== -1) {
       const newSuspects = [...selectedSuspects];
@@ -822,7 +822,7 @@ const PrepRoom = () => {
     }
   };
 
-  const handleRemoveSuspect = (index) => {
+  const handleRemoveSuspect = (index: number) => {
     if (!suspectsLocked) {
       const newSuspects = [...selectedSuspects];
       newSuspects[index] = null;
@@ -922,7 +922,7 @@ const PrepRoom = () => {
                   }
                 }}
               >
-                <span style={styles.fileIcon}>{FILE_DATA[fileName].icon}</span>
+                <span style={styles.fileIcon}>{FILE_DATA[fileName as keyof typeof FILE_DATA].icon}</span>
                 <span style={styles.fileName}>{fileName}</span>
               </div>
             ))}
@@ -1066,7 +1066,7 @@ const PrepRoom = () => {
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <div style={styles.modalHeaderLeft}>
-                <span style={styles.modalIcon}>{FILE_DATA[selectedFile].icon}</span>
+                <span style={styles.modalIcon}>{FILE_DATA[selectedFile as keyof typeof FILE_DATA].icon}</span>
                 <h3 style={styles.modalTitle}>{selectedFile}</h3>
               </div>
               <button
@@ -1086,7 +1086,7 @@ const PrepRoom = () => {
               </button>
             </div>
             <div style={styles.modalBody}>
-              <pre style={styles.fileContent}>{FILE_DATA[selectedFile].content}</pre>
+              <pre style={styles.fileContent}>{selectedFile && FILE_DATA[selectedFile as keyof typeof FILE_DATA].content}</pre>
             </div>
           </div>
         </div>
@@ -1189,7 +1189,7 @@ const cssStyles = `
 `;
 
 // ==================== INLINE STYLES ====================
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
   container: {
     minHeight: '100vh',
     background: '#110a0a',
@@ -1197,7 +1197,7 @@ const styles = {
     fontFamily: "'Share Tech Mono', monospace",
     padding: '20px',
     position: 'relative'
-  },
+  } as React.CSSProperties,
   header: {
     textAlign: 'center',
     padding: '20px 0',
