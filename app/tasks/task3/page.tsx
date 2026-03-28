@@ -1,5 +1,5 @@
 'use client'
-// @ts-nocheck
+
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 // ─── TYPES ───────────────────────────────────────────────
@@ -292,7 +292,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-hei
 function shuffle<T>(arr: T[]): T[] {
     const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a;
 }
-function pad2(n: number) { return String(n).padStart(2, "0"); }
+function pad2(n: number): string { return String(n).padStart(2, "0"); }
 function btnStyle(color: "green" | "red" | "blue"): React.CSSProperties {
     return { padding: "5px 14px", background: "transparent", fontFamily: "var(--font-head)", fontSize: "0.55rem", letterSpacing: 3, cursor: "pointer", transition: "all 0.2s", borderRadius: 3, border: `1px solid var(--${color})`, color: `var(--${color})` };
 }
@@ -355,8 +355,8 @@ function InstructionsScreen({ idx, onStart, hasStarted }: { idx: PuzzleId; onSta
 
 function PuzzleSignalRouting({ solved, onSolve, onToast }: { solved: boolean; onSolve: () => void; onToast: (m: string, t: ToastType) => void }) {
     const [grid, setGrid] = useState<Pipe[][]>(SR_INIT);
-    const rotate = (r: number, c: number) => { setGrid(g => { const ng = g.map(row => [...row]); const v = ng[r][c]; if (!v || v === "S" || v === "X") return ng; ng[r][c] = (ROTATE_MAP[v] ?? v) as Pipe; return ng; }); };
-    const check = () => {
+    const rotate = (r: number, c: number): void => { setGrid(g => { const ng = g.map(row => [...row]); const v = ng[r][c]; if (!v || v === "S" || v === "X") return ng; ng[r][c] = (ROTATE_MAP[v] ?? v) as Pipe; return ng; }); };
+    const check = (): void => {
         const vis = Array.from({ length: 5 }, () => new Array(5).fill(false)); const q: [number, number][] = [[0, 2]]; vis[0][2] = true;
         const dirs = [{ dr: 0, dc: -1, to: "l", from: "r" }, { dr: 0, dc: 1, to: "r", from: "l" }, { dr: -1, dc: 0, to: "u", from: "d" }, { dr: 1, dc: 0, to: "d", from: "u" }];
         while (q.length) { const [r, c] = q.shift()!; if (r === 4 && c === 2) { onSolve(); return; } const conn = PIPE_CONN[grid[r][c]!] ?? { l: 0, r: 0, u: 0, d: 0 }; for (const { dr, dc, to, from } of dirs) { const nr = r + dr, nc = c + dc; if (nr < 0 || nr >= 5 || nc < 0 || nc >= 5 || vis[nr][nc]) continue; if (!conn[to as keyof typeof conn]) continue; const nconn = PIPE_CONN[grid[nr][nc]!] ?? { l: 0, r: 0, u: 0, d: 0 }; if (!nconn[from as keyof typeof nconn]) continue; vis[nr][nc] = true; q.push([nr, nc]); } }
@@ -373,8 +373,8 @@ function PuzzleSignalRouting({ solved, onSolve, onToast }: { solved: boolean; on
 function PuzzleTileFlip({ solved, onSolve, onToast, hintState }: { solved: boolean; onSolve: () => void; onToast: (m: string, t: ToastType) => void; hintState?: HintState }) {
     // CRACK THE CODE — guess a 4-digit code using number pad + clues
     // Each guess tells: ✓ correct digit + position, ◉ correct digit wrong position
-    const SECRET = () => { const d = []; while (d.length < 4) { const n = Math.floor(Math.random() * 10); if (!d.includes(n)) d.push(n); } return d; };
-    const [secret] = useState<number[]>(SECRET);
+    const SECRET = (): number[] => { const d: number[] = []; while (d.length < 4) { const n = Math.floor(Math.random() * 10); if (!d.includes(n)) d.push(n); } return d; };
+    const [secret] = useState<number[]>(() => SECRET());
     // Dynamic hints — reveal actual digits from the secret
     const shuffledSecret = useMemo(() => [...secret].sort(() => Math.random() - 0.5), [secret]);
     const weakHintText = `One digit in the code is: ${shuffledSecret[0]}. It appears somewhere in the 4-digit sequence.`;
@@ -390,10 +390,10 @@ function PuzzleTileFlip({ solved, onSolve, onToast, hintState }: { solved: boole
     const [won, setWon] = useState(false);
     const [failed, setFailed] = useState(false);
 
-    const reset = () => { setGuess([]); setHistory([]); setFailed(false); };
-    const addDigit = (n: number) => { if (guess.length < 4 && !guess.includes(n) && !failed) setGuess(g => [...g, n]); };
-    const delDigit = () => { if (!failed) setGuess(g => g.slice(0, -1)); };
-    const submit = () => {
+    const reset = (): void => { setGuess([]); setHistory([]); setFailed(false); };
+    const addDigit = (n: number): void => { if (guess.length < 4 && !guess.includes(n) && !failed) setGuess(g => [...g, n]); };
+    const delDigit = (): void => { if (!failed) setGuess(g => g.slice(0, -1)); };
+    const submit = (): void => {
         if (guess.length < 4 || failed) return;
         let exact = 0, close = 0;
         guess.forEach((d, i) => { if (d === secret[i]) exact++; else if (secret.includes(d)) close++; });
@@ -503,7 +503,7 @@ function PuzzleMemoryMatch({ solved, onSolve, hintState }: { solved: boolean; on
     const [lock, setLock] = useState(false);
 
     // Helper: reveal N unmatched pairs using functional state update
-    const revealPairs = (n: number) => {
+    const revealPairs = (n: number): void => {
         setMatched(prev => {
             const nm = new Set(prev);
             let revealed = 0;
@@ -527,7 +527,7 @@ function PuzzleMemoryMatch({ solved, onSolve, hintState }: { solved: boolean; on
         if (hintState?.strong) revealPairs(2);
     }, [hintState?.strong]);
 
-    const flip = (i: number) => { if (lock || flipped.includes(i) || matched.has(i) || solved) return; const nf = [...flipped, i]; setFlipped(nf); if (nf.length === 2) { setLock(true); const [a, b] = nf; if (cards[a].pair === cards[b].pair) { const nm = new Set(matched); nm.add(a); nm.add(b); setMatched(nm); setFlipped([]); setLock(false); if (nm.size === TOTAL_PAIRS * 2) setTimeout(onSolve, 300); } else { setTimeout(() => { setFlipped([]); setLock(false); }, 900); } } };
+    const flip = (i: number): void => { if (lock || flipped.includes(i) || matched.has(i) || solved) return; const nf = [...flipped, i]; setFlipped(nf); if (nf.length === 2) { setLock(true); const [a, b] = nf; if (cards[a].pair === cards[b].pair) { const nm = new Set(matched); nm.add(a); nm.add(b); setMatched(nm); setFlipped([]); setLock(false); if (nm.size === TOTAL_PAIRS * 2) setTimeout(onSolve, 300); } else { setTimeout(() => { setFlipped([]); setLock(false); }, 900); } } };
     return (<div>
         <div style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginBottom: 8, letterSpacing: 1 }}>{matched.size / 2} / {TOTAL_PAIRS} pairs matched</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,72px)", gap: 6, margin: "0 auto 12px", width: "fit-content" }}>
@@ -574,7 +574,7 @@ function PuzzleArrowPath({ solved, onSolve, onToast }: { solved: boolean; onSolv
     const COLOR_HEX: Record<string, string> = { RED: "#ff3333", GREEN: "#22cc55", BLUE: "#3399ff", YELLOW: "#ffcc00" };
     const COLOR_BG: Record<string, string> = { RED: "#2a0808", GREEN: "#0a2a10", BLUE: "#081a2a", YELLOW: "#2a1e00" };
 
-    const makeRound = () => {
+    const makeRound = (): { word: string; color: string } => {
         const word = COLORS[Math.floor(Math.random() * 4)];
         let color = COLORS[Math.floor(Math.random() * 4)];
         // Ensure word and color are different (makes it a real Stroop challenge)
@@ -590,7 +590,7 @@ function PuzzleArrowPath({ solved, onSolve, onToast }: { solved: boolean; onSolv
     const [qNum, setQNum] = useState(1);                  // current question number (1-5)
     const [timeLeft, setTimeLeft] = useState(2);
 
-    const resetAll = () => { setStroopScore(0); setQNum(1); setFeedback(""); setWrongPick(null); setTimeLeft(2); setRound(makeRound()); };
+    const resetAll = (): void => { setStroopScore(0); setQNum(1); setFeedback(""); setWrongPick(null); setTimeLeft(2); setRound(makeRound()); };
 
     // 2-second countdown timer per round
     useEffect(() => {
@@ -599,9 +599,9 @@ function PuzzleArrowPath({ solved, onSolve, onToast }: { solved: boolean; onSolv
             // Time up counts as wrong
             const isLast = qNum >= TOTAL_Q;
             if (isLast) {
-                setFeedback("failed");
+                setTimeout(() => setFeedback("failed"), 0);
             } else {
-                setFeedback("timeup");
+                setTimeout(() => setFeedback("timeup"), 0);
                 setTimeout(() => { setFeedback(""); setWrongPick(null); setTimeLeft(2); setQNum(n => n + 1); setRound(makeRound()); }, 900);
             }
             return;
@@ -610,9 +610,9 @@ function PuzzleArrowPath({ solved, onSolve, onToast }: { solved: boolean; onSolv
         return () => clearInterval(t);
     }, [timeLeft, feedback, solved]);
 
-    useEffect(() => { setTimeLeft(2); }, [round]);
+    useEffect(() => { setTimeout(() => setTimeLeft(2), 0); }, [round]);
 
-    const pick = (chosen: string) => {
+    const pick = (chosen: string): void => {
         if (feedback !== "" || solved) return;
         const correct = chosen === round.color;
         const isLast = qNum >= TOTAL_Q;
@@ -801,11 +801,11 @@ function PuzzleSymbolGroup({ solved, onSolve, onToast }: { solved: boolean; onSo
     };
     const [all] = useState(() => shuffle([...SYM_CATS.FIRMWARE, ...SYM_CATS.SECURITY]));
     const [cur, setCur] = useState<Record<string, string | null>>({});
-    const moveTo = (s: string, cat: string | null) => {
+    const moveTo = (s: string, cat: string | null): void => {
         if (solved) return;
         setCur(c => { const n = { ...c }; n[s] = cat; return n; });
     };
-    const check = () => {
+    const check = (): void => {
         const ok = Object.entries(SYM_CATS).every(([cat, syms]) => syms.every(s => cur[s] === cat));
         if (ok) onSolve(); else onToast("GROUPING INCORRECT — REASSIGN", "error");
     };
@@ -908,7 +908,7 @@ function PuzzleSimon({ solved, onSolve, onToast, active }: { solved: boolean; on
     const [lives, setLives] = useState(MAX_LIVES);
     const seqRef = useRef<number[]>([]); const roundRef = useRef(0);
 
-    const go = useCallback((seq, round) => {
+    const go = useCallback((seq: number[], round: number) => {
         const ns = [...seq, Math.floor(Math.random() * 4)];
         seqRef.current = ns; roundRef.current = round;
         setPs([]); setWaiting(false);
@@ -923,7 +923,7 @@ function PuzzleSimon({ solved, onSolve, onToast, active }: { solved: boolean; on
         }, 350 * ns.length + 250);
     }, []);
 
-    useEffect(() => { if (!solved && active) go([], 1); }, [active]);
+    useEffect(() => { if (!solved && active) setTimeout(() => go([], 1), 0); }, [active]);
 
     const restart = () => { setLives(MAX_LIVES); seqRef.current = []; roundRef.current = 0; go([], 1); };
 
@@ -972,8 +972,8 @@ function PuzzleSimon({ solved, onSolve, onToast, active }: { solved: boolean; on
 function PuzzleCodeAlign({ solved, onSolve, onToast }: { solved: boolean; onSolve: () => void; onToast: (m: string, t: ToastType) => void }) {
     const [order, setOrder] = useState<string[]>(() => shuffle(CODE_CORRECT));
     const [drag, setDrag] = useState<number | null>(null);
-    const drop = (t: number) => { if (drag === null || drag === t) return; setOrder(o => { const n = [...o];[n[drag], n[t]] = [n[t], n[drag]]; return n; }); setDrag(null); };
-    const check = () => { if (order.every((v, i) => v === CODE_CORRECT[i])) setTimeout(onSolve, 400); else onToast("CODE ORDER INCORRECT — REARRANGE", "error"); };
+    const drop = (t: number): void => { if (drag === null || drag === t) return; setOrder(o => { const n = [...o];[n[drag], n[t]] = [n[t], n[drag]]; return n; }); setDrag(null); };
+    const check = (): void => { if (order.every((v, i) => v === CODE_CORRECT[i])) setTimeout(onSolve, 400); else onToast("CODE ORDER INCORRECT — REARRANGE", "error"); };
     return (<div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
             {order.map((line, i) => (<div key={line} draggable={!solved} onDragStart={() => setDrag(i)} onDragOver={e => e.preventDefault()} onDrop={() => drop(i)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: solved && order[i] === CODE_CORRECT[i] ? "#1a0505" : "var(--bg)", border: `1px solid ${solved && order[i] === CODE_CORRECT[i] ? "var(--green)" : drag === i ? "var(--yellow)" : "var(--border)"}`, borderRadius: 3, fontSize: "0.58rem", letterSpacing: 1, cursor: solved ? "default" : "grab", userSelect: "none", opacity: drag === i ? 0.5 : 1, color: solved && order[i] === CODE_CORRECT[i] ? "var(--green)" : "var(--text)" }}>
@@ -1344,25 +1344,27 @@ function Ghost41Chat({ solved, unlocked, onHintUsed, onCorrect }: { solved: bool
 
     useEffect(() => { msgsEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
     useEffect(() => {
-        if (qIdx === 0) {
-            // First question — initialise fresh
-            setMsgs([
-                { role: "ghost", text: q.mission },
-                { role: "ghost", text: q.followup },
-                { role: "ghost", text: "GHOST41_ID > QUERY\n" + q.query },
-            ]);
-        } else {
-            // Subsequent questions — append to existing conversation, never wipe it
-            setMsgs(prev => [
-                ...prev,
-                { role: "ghost", text: "— NEXT OBJECTIVE —" },
-                { role: "ghost", text: "GHOST41_ID > QUERY\n" + q.query },
-            ]);
-        }
-        setInput(""); setHintPanel("closed"); if (qIdx === 0) setShownHints({}); setWrongCount(0); setLastCorrect(false);
+        setTimeout(() => {
+            if (qIdx === 0) {
+                // First question — initialise fresh
+                setMsgs([
+                    { role: "ghost", text: q.mission },
+                    { role: "ghost", text: q.followup },
+                    { role: "ghost", text: "GHOST41_ID > QUERY\n" + q.query },
+                ]);
+            } else {
+                // Subsequent questions — append to existing conversation, never wipe it
+                setMsgs(prev => [
+                    ...prev,
+                    { role: "ghost", text: "— NEXT OBJECTIVE —" },
+                    { role: "ghost", text: "GHOST41_ID > QUERY\n" + q.query },
+                ]);
+            }
+            setInput(""); setHintPanel("closed"); if (qIdx === 0) setShownHints({}); setWrongCount(0); setLastCorrect(false);
+        }, 0);
     }, [qIdx]);
 
-    const send = () => {
+    const send = (): void => {
         const val = input.trim(); if (!val) return;
         const inp = val.toLowerCase();
         const ok = q.answers.some(a => inp.includes(a.toLowerCase()));
@@ -1589,7 +1591,7 @@ function ReconPanel({ onToast, onUnlockGhost }: { onToast: (m: string, t: ToastT
     const AS = ["wrk04", "nas02", "usb07"];
 
     // Fragment pool: correct + decoys, reshuffled on every failed attempt
-    const [pool, setPool] = useState<string[]>(makeFragPool);
+    const [pool, setPool] = useState<string[]>(() => makeFragPool());
     const [cs, setCs] = useState<string[]>(["", "", "", ""]);
     const [sf, setSf] = useState<string | null>(null);
     const [s1, setS1] = useState(false); const [s2, setS2] = useState(false);
@@ -1603,13 +1605,13 @@ function ReconPanel({ onToast, onUnlockGhost }: { onToast: (m: string, t: ToastT
     const [showF, setShowF] = useState(false);
     const [attempts, setAttempts] = useState(0);
 
-    const fill = (i: number) => {
+    const fill = (i: number): void => {
         if (!sf) return onToast("Select a fragment first", "info");
         setCs(s => { const n = [...s].map(v => v === sf ? "" : v); n[i] = sf; return n; });
         setSf(null);
     };
 
-    const v1 = () => {
+    const v1 = (): void => {
         if (JSON.stringify(cs) === JSON.stringify(CF)) {
             setS1(true);
             onToast("TRANSFER PATH VALIDATED", "success");
@@ -1623,7 +1625,7 @@ function ReconPanel({ onToast, onUnlockGhost }: { onToast: (m: string, t: ToastT
         }
     };
 
-    const v2 = () => {
+    const v2 = (): void => {
         if (act["act-0"] === "lsuri_fw" && act["act-1"] === "a.m_arch" && act["act-2"] === "vk_sec") {
             setS2(true);
             onToast("CHAIN OF CUSTODY RECONSTRUCTED", "success");
@@ -1928,11 +1930,11 @@ export default function App() {
         return attempt;
     });
 
-    const toast = useCallback((msg: string, type: ToastType) => { const id = tid.current++; setToasts(t => [...t, { id, msg, type }]); setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3100); }, []);
+    const toast = useCallback((msg: string, type: ToastType): void => { const id = tid.current++; setToasts(t => [...t, { id, msg, type }]); setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3100); }, []);
 
-    const onSolve = (idx: number) => { setSolved(s => { if (s[idx]) return s; const ns = [...s]; ns[idx] = true; if (ns.filter(Boolean).length === 8) setTimeout(() => setAllSolved(true), 600); return ns; }); setModal(null); toast(`FRAGMENT ACQUIRED: ${FRAGMENTS[idx].id}`, "success"); };
-    const onHR = (ni: number, lv: HintLevel) => setPending({ nodeIdx: ni, level: lv });
-    const applyHint = () => { if (!pending) return; const { nodeIdx, level } = pending; setHints(h => { const n = [...h]; n[nodeIdx] = { ...n[nodeIdx], [level]: true }; return n; }); setScore(s => s - HINT_COSTS[level]); toast(`HINT ACCESSED: −${HINT_COSTS[level]} PTS`, "warn"); setPending(null); };
+    const onSolve = (idx: number): void => { setSolved(s => { if (s[idx]) return s; const ns = [...s]; ns[idx] = true; if (ns.filter(Boolean).length === 8) setTimeout(() => setAllSolved(true), 600); return ns; }); setModal(null); toast(`FRAGMENT ACQUIRED: ${FRAGMENTS[idx].id}`, "success"); };
+    const onHR = (ni: number, lv: HintLevel): void => setPending({ nodeIdx: ni, level: lv });
+    const applyHint = (): void => { if (!pending) return; const { nodeIdx, level } = pending; setHints(h => { const n = [...h]; n[nodeIdx] = { ...n[nodeIdx], [level]: true }; return n; }); setScore(s => s - HINT_COSTS[level]); toast(`HINT ACCESSED: −${HINT_COSTS[level]} PTS`, "warn"); setPending(null); };
 
     const total = solved.filter(Boolean).length;
 

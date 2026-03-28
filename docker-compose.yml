@@ -1,24 +1,14 @@
-version: "3.8"
+version: "3.9"
 
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      # ⚠️ only keep this if you're on broken LAN
-      # remove in real production
-      network: host
+  frontend:
+    build: .
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-    restart: always
-
-    # 🔥 healthcheck (production grade)
-    healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:3000" ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
