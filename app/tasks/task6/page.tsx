@@ -888,22 +888,8 @@ const PrepRoom = () => {
         setShowLockDialog(false);
     };
 
-    const handleSubmit = async () => {
-        try {
-            const res = await fetch("/api/tasks/submit", {
-                method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
-                body: JSON.stringify({ taskId: "task6", action: "finalSubmission", payload: { suspects: selectedSuspects } })
-            });
-            const data = await res.json();
-            if (res.ok && data.isCorrect) {
-                alert("EVIDENCE SUBMITTED SUCCESSFULLY. FINAL ANALYSIS COMMENCING.");
-                window.location.href = "/";
-            } else {
-                alert("Submission failed or incomplete suspects.");
-            }
-        } catch {
-            alert("Connection error");
-        }
+    const handleSubmit = () => {
+        window.open("https://forms.gle/VPNuSJUaaoPWoqJp7", "_blank");
     };
 
     const suspectCount = selectedSuspects.filter(s => s !== null).length;
@@ -923,7 +909,7 @@ const PrepRoom = () => {
                         </p>
                         <button
                             style={styles.submitButton}
-                            onClick={() => window.open('https://forms.gle/VPNuSJUaaoPWoqJp7', '_blank')}
+                            onClick={handleSubmit}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.background = '#ff1111';
                                 e.currentTarget.style.boxShadow = '0 0 30px #ff111188';
@@ -1684,5 +1670,4 @@ const styles: { [key: string]: React.CSSProperties } = {
         boxShadow: '0 0 20px #cc000066'
     }
 };
-
 export default PrepRoom;
