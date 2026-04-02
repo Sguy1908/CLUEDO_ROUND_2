@@ -804,7 +804,7 @@ TIMESTAMP	EMPLOYEE ID	NAME	LOCATION	STATUS
         icon: "❄️",
         content: `COLD STORAGE ENVIRONMENT
 B3 ENVIRONMENTAL CONTROL LOG
-21:48–22:03gi
+21:48–22:03
 TIMESTAMP	EVENT TYPE	DETAIL
 21:48:11	SYS_INIT	Cold Storage B3 environmental controller online
 21:48:18	TEMP_READ	Chamber temperature: 5.6°C
@@ -923,7 +923,7 @@ const PrepRoom = () => {
                         </p>
                         <button
                             style={styles.submitButton}
-                            onClick={handleSubmit}
+                            onClick={() => window.open('https://forms.gle/VPNuSJUaaoPWoqJp7', '_blank')}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.background = '#ff1111';
                                 e.currentTarget.style.boxShadow = '0 0 30px #ff111188';
