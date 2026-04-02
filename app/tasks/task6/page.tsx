@@ -784,6 +784,58 @@ CONCERNS:
 • No documentation of override removal
 • Export coincides with breach timeframe (21:03-21:04)
 • Same approval authority (a.m_arch) in multiple events`
+    },
+    "Badge & Door Logs": {
+        icon: "🚪",
+        content: `BADGE & DOOR LOGS — LAB 7 ACCESS RECORDS
+TIMESTAMP	EMPLOYEE ID	NAME	LOCATION	STATUS
+20:12:04	EMP-034	Vikrant Kaul	Lab 7	ENTRY
+20:44:18	EMP-034	Vikrant Kaul	Lab 7	EXIT
+21:18:42	SEC-02	Sec_Officer_02	Lab 7	ENTRY
+21:22:10	SEC-02	Sec_Officer_02	Lab 7	EXIT
+21:31:07	EMP-034	Vikrant Kaul	Lab 6	ENTRY
+21:36:22	EMP-034	Vikrant Kaul	Lab 6	EXIT
+21:44:58	EMP-019	Rishab Sen	Lab 7	ENTRY
+21:51:30	SEC-02	Sec_Officer_02	Main Gate	EXIT
+22:03:14	EMP-034	Vikrant Kaul	Lab 5	ENTRY
+22:09:02	EMP-034	Vikrant Kaul	Lab 5	EXIT`
+    },
+    "Cold Storage Environment": {
+        icon: "❄️",
+        content: `COLD STORAGE ENVIRONMENT
+B3 ENVIRONMENTAL CONTROL LOG
+21:48–22:03gi
+TIMESTAMP	EVENT TYPE	DETAIL
+21:48:11	SYS_INIT	Cold Storage B3 environmental controller online
+21:48:18	TEMP_READ	Chamber temperature: 5.6°C
+21:48:25	TEMP_CONTROL	Cooling cycle active
+21:49:03	ACCESS_IDLE	Door sealed
+21:49:44	SENSOR_STATUS	Internal humidity stable
+21:50:12	INVENTORY_SCAN	Rack occupancy unchanged
+21:50:55	POWER_MONITOR	Auxiliary backup active
+21:51:27	TEMP_READ	Chamber temperature: 5.1°C
+21:52:04	ACCESS_IDLE	No authorized entry
+21:52:48	TEMP_CONTROL	Cooling maintained
+21:53:12	SENSOR_STATUS	Intake zone clear
+21:54:09	ELEVATOR_LINK	Elevator B inbound event registered
+21:54:33	PREP_MODE	Intake channel activated
+21:55:02	ACCESS_PENDING	Awaiting transfer authorization
+21:55:31	DOOR_UNLOCK	Internal transfer clearance accepted
+21:56:04	DOOR_OPEN	Cold Storage B3 access event
+21:56:19	TEMP_DROP	Chamber fluctuation detected: 4.8°C
+21:56:42	INTAKE_EVENT	New intake registered
+21:57:03	DOOR_CLOSE	Chamber sealed
+21:57:26	TEMP_CONTROL	Rapid stabilization initiated
+21:58:11	TEMP_READ	Chamber temperature: 4.3°C
+21:58:47	SENSOR_STATUS	Internal load changed
+21:59:15	STORAGE_VERIFY	Rack occupancy updated
+21:59:48	TEMP_CONTROL	Stable hold mode active
+22:00:11	CHAMBER_STATUS	4.0°C hold achieved
+22:00:33	ACCESS_LOCK	Manual entry disabled
+22:01:06	SYSTEM_NOTE	Preserve environmental stability
+22:01:44	INVENTORY_SYNC	Restricted item record updated
+22:02:15	AUDIT_FLAG	Internal visibility limited
+22:03:02	STATUS_LOCK	Modification requires clearance`
     }
 };
 
