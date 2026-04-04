@@ -200,19 +200,19 @@ export default function Page() {
         <div className="space-y-4">
           {[
             {
-              title: "TASK 1 : Neural Autopsy Report",
+              title: "TASK : Neural Autopsy Report",
               path: "/tasks/task1",
             },
             {
-              title: "TASK 3 : Chain of Custody",
+              title: "TASK : Chain of Custody",
               path: "/tasks/task3",
             },
             {
-              title: "TASK 5 : Safety Override Auction",
+              title: "TASK : Safety Override Auction",
               path: "/tasks/task5",
             },
             {
-              title: "TASK 6 : Evidence Chain Builder",
+              title: "TASK : Evidence Chain Builder",
               path: "/tasks/task6",
             },
           ].map((task, i) => {
