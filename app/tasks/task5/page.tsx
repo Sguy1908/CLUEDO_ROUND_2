@@ -81,7 +81,7 @@ const INIT_CHAT = [
   "20:51 — Leena: Switching limiter monitor to debug mode.",
 ];
 const HINTS = [
-  { level: "WEAK", cost: -10, text: "Check the events where the system override was activated." },
+  { level: "WEAK",   cost: -10, text: "Check the events where the system override was activated." },
   { level: "MEDIUM", cost: -20, text: "Look at the override approval and the account that authorized it." },
   { level: "STRONG", cost: -35, text: "The architecture account authorized a temporary override that prevented shutdown escalation." },
 ];
@@ -193,6 +193,83 @@ const EVENTS: GameEvent[] = [
   },
 ];
 
+
+/* ══════════════════════════ INTRO BRIEFING ══════════════════════════════════ */
+function PreEventBriefing({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.88)", padding: 24 }}>
+      <div className="nb-fin" style={{ width: "100%", maxWidth: 540, background: "#0a0808", border: "1px solid #3a1200", display: "flex", flexDirection: "column" }}>
+
+        {/* Header */}
+        <div style={{ background: "linear-gradient(90deg,#160303,#0d0101)", borderBottom: "1px solid #aa1800", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontFamily: "'VT323',monospace", fontSize: 20, letterSpacing: 4, color: "#ff4400" }}>INCIDENT TIMELINE — BRIEFING</div>
+          <span style={{ fontSize: 9, color: "#553322", letterSpacing: 3 }}>READ BEFORE PROCEEDING</span>
+        </div>
+
+        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 11 }}>
+
+          {/* What you're doing */}
+          <div style={{ background: "#0d0300", border: "1px solid #2a0800", padding: "10px 13px" }}>
+            <div style={{ fontSize: 9, letterSpacing: 3, color: "#553322", marginBottom: 7 }}>WHAT YOU ARE DOING</div>
+            <div style={{ fontSize: 12, color: "#998870", lineHeight: 1.75 }}>
+              You are reviewing a sequence of system events from a NeuroBand clinical test session. For each event, you must decide whether to intervene, ignore it, or request more data. Your decisions affect your team's leaderboard score.
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{ background: "#060a06", border: "1px solid #1a3300", padding: "10px 13px" }}>
+            <div style={{ fontSize: 9, letterSpacing: 3, color: "#335533", marginBottom: 8 }}>YOUR ACTIONS</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              {[
+                { label: "⛔  INTERVENE", clr: "#ff4400", desc: "Flag the event as a safety concern requiring action." },
+                { label: "✓  IGNORE",    clr: "#00aa44", desc: "Mark the event as normal — no action needed." },
+                { label: "🔍  REQUEST DATA", clr: "#0088cc", desc: "Pull additional diagnostic data before deciding." },
+              ].map(a => (
+                <div key={a.label} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <span style={{ fontSize: 11, color: a.clr, fontFamily: "'Share Tech Mono',monospace", minWidth: 130, flexShrink: 0 }}>{a.label}</span>
+                  <span style={{ fontSize: 11, color: "#776655", lineHeight: 1.55 }}>{a.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Point economy */}
+          <div style={{ background: "#080800", border: "1px solid #221a00", padding: "10px 13px" }}>
+            <div style={{ fontSize: 9, letterSpacing: 3, color: "#554400", marginBottom: 8 }}>POINT ECONOMY</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 16px" }}>
+              {[
+                { l: "Correct intervention",          v: "+50 pts",  c: "#00cc66" },
+                { l: "Critical intervention",         v: "+80 pts",  c: "#00ff88" },
+                { l: "Wrong intervention",            v: "−25 pts",  c: "#ff5533" },
+                { l: "Missed critical intervention",  v: "−40 pts",  c: "#ff3311" },
+                { l: "Request data (found)",          v: "+10 pts",  c: "#00aacc" },
+                { l: "Request data (none found)",     v: "−10 pts",  c: "#ff6644" },
+              ].map(row => (
+                <div key={row.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1a1400", paddingBottom: 4 }}>
+                  <span style={{ fontSize: 10, color: "#776644" }}>{row.l}</span>
+                  <span style={{ fontSize: 12, color: row.c, fontFamily: "'VT323',monospace", letterSpacing: 1, marginLeft: 8 }}>{row.v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Note */}
+          <div style={{ fontSize: 10, color: "#443322", letterSpacing: 1, lineHeight: 1.6, borderLeft: "2px solid #330800", paddingLeft: 10 }}>
+            Decisions are final and cannot be undone. Evidence from each event stays in your data log for the investigation phase.
+          </div>
+        </div>
+
+        {/* Dismiss */}
+        <div style={{ borderTop: "1px solid #1a0800", padding: "10px 16px", background: "#060000", display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "9px 28px", background: "linear-gradient(135deg,#001500,#000d00)", border: "1px solid #006600", color: "#00bb44", fontSize: 11, letterSpacing: 3, cursor: "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
+            ▶ BEGIN TIMELINE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════ PIXEL GHOST ════════════════════════════════════ */
 function PixelGhost({ size = 64 }: { size?: number }) {
   const px = size / 10;
@@ -277,6 +354,7 @@ function GhostPanel({
   const [qScore, setQScore] = useState(0);
   const [tab, setTab] = useState<"chat" | "log">("chat");
   const [hintShown, setHintShown] = useState<number | null>(null);
+  const [hintsUsedSet, setHintsUsedSet] = useState<Set<number>>(new Set());
   const [hov, setHov] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -306,6 +384,7 @@ function GhostPanel({
       });
     }, 500);
     setHintShown(null);
+    setHintsUsedSet(new Set());
   }, [qIdx]);
 
   useEffect(() => {
@@ -332,6 +411,14 @@ function GhostPanel({
 
       setTimeout(() => {
         push({ from: "ghost", text: ok ? q.ok : q.bad, tag: "GHOST41_ID › ANALYSIS", correct: ok });
+        // Auto-show weak hint after wrong answer (only if not already used)
+        if (!ok && !hintsUsedSet.has(0)) {
+          setTimeout(() => {
+            push({ from: "ghost", text: `💡 WEAK HINT: ${HINTS[0].text}`, tag: "GHOST41_ID › HINT" });
+            setHintShown(0);
+            setHintsUsedSet(s => new Set([...s, 0]));
+          }, 700);
+        }
         setTimeout(() => {
           const next = qIdx + 1;
           if (next >= GHOST_QS.length) {
@@ -350,11 +437,14 @@ function GhostPanel({
     }
   };
 
-  const showHint = () => {
-    if (qIdx < 0 || qIdx >= GHOST_QS.length || hintShown !== null) return;
-    const q = GHOST_QS[qIdx];
-    push({ from: "ghost", text: `💡 HINT: ${q.hint}`, tag: "GHOST41_ID › HINT" });
-    setHintShown(qIdx);
+  const showHint = (tier: number) => {
+    if (qIdx < 0 || qIdx >= GHOST_QS.length) return;
+    if (hintsUsedSet.has(tier)) return;
+    const h = HINTS[tier];
+    push({ from: "ghost", text: `💡 ${h.level} HINT: ${h.text}`, tag: "GHOST41_ID › HINT" });
+    setHintsUsedSet(s => new Set([...s, tier]));
+    setHintShown(tier);
+    setQScore(s => s + h.cost);
   };
 
   const total = tlScore + qScore;
@@ -461,32 +551,36 @@ function GhostPanel({
             )}
           </div>
 
-          {/* Hint + Input */}
-          {!done && qIdx >= 0 && qIdx < GHOST_QS.length && (
-            <div style={{ borderTop: "1px solid #0a2233", padding: "6px 12px", background: "#040c17", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 9, color: "#335566", letterSpacing: 1 }}>Q{qIdx + 1} of {GHOST_QS.length}</span>
-              <button
-                onClick={showHint}
-                disabled={hintShown === qIdx || waiting}
-                style={{ background: "none", border: `1px solid ${hintShown === qIdx ? "#1a1a1a" : "#553300"}`, color: hintShown === qIdx ? "#1a1a1a" : "#aa7700", fontSize: 9, letterSpacing: 2, padding: "3px 10px", cursor: hintShown === qIdx ? "not-allowed" : "pointer", fontFamily: "'Share Tech Mono',monospace", opacity: hintShown === qIdx ? 0.3 : 1, transition: "all 0.15s" }}>
-                💡 {hintShown === qIdx ? "HINT USED" : "REQUEST HINT"}
+          <div style={{ borderTop: "1px solid #0d3a55", background: "#050d18", flexShrink: 0 }}>
+            {/* 3-tier hint row — all tiers independently available */}
+            <div style={{ display: "flex", borderBottom: "1px solid #0a2233" }}>
+              {HINTS.map((h, i) => {
+                const alreadyUsed = hintsUsedSet.has(i);
+                const disabled = waiting || done || qIdx < 0 || alreadyUsed;
+                return (
+                  <button key={h.level} onClick={() => !disabled && showHint(i)}
+                    style={{ flex: 1, padding: "6px 4px", background: alreadyUsed ? "#040b04" : "transparent", border: "none", borderRight: i < 2 ? "1px solid #0a2233" : "none", color: alreadyUsed ? "#1f4a1f" : disabled ? "#162216" : "#77aa33", fontSize: 9, letterSpacing: 1, cursor: disabled ? "default" : "pointer", fontFamily: "'Share Tech Mono',monospace", lineHeight: 1.6 }}>
+                    {alreadyUsed ? "✓ " : "💡 "}{h.level}<br />
+                    <span style={{ fontSize: 9, color: alreadyUsed ? "#143314" : disabled ? "#0f1a0f" : "#445522" }}>{h.cost} pts</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ padding: "10px 12px", display: "flex", gap: 9, alignItems: "center" }}>
+              <input
+                ref={inputRef} value={input} disabled={waiting || done || qIdx < 0}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+                placeholder={done ? "Investigation complete." : waiting ? "GHOST41_ID is typing..." : "Type your answer..."}
+                style={{ flex: 1, background: "#0a1a2a", border: "2px solid #1a5577", color: "#a8d8f0", fontFamily: "'Share Tech Mono',monospace", fontSize: 13, padding: "10px 13px", outline: "none", letterSpacing: 1, opacity: (waiting || done || qIdx < 0) ? 0.5 : 1, transition: "border-color 0.15s,box-shadow 0.15s" }}
+                onFocus={e => { e.target.style.borderColor = "#00aacc"; e.target.style.boxShadow = "0 0 10px rgba(0,170,200,0.25)"; }}
+                onBlur={e => { e.target.style.borderColor = "#1a5577"; e.target.style.boxShadow = "none"; }}
+              />
+              <button onClick={handleSend} disabled={!input.trim() || waiting || done}
+                style={{ padding: "10px 16px", background: (!input.trim() || waiting || done) ? "#050d18" : "#071e30", border: `1px solid ${(!input.trim() || waiting || done) ? "#1a2a3a" : "#0077aa"}`, color: (!input.trim() || waiting || done) ? "#1a3344" : "#00aacc", fontFamily: "'Share Tech Mono',monospace", fontSize: 12, letterSpacing: 2, cursor: (!input.trim() || waiting || done) ? "not-allowed" : "pointer", transition: "all 0.15s", whiteSpace: "nowrap" }}>
+                [ SEND ]
               </button>
             </div>
-          )}
-          <div style={{ borderTop: "1px solid #0d3a55", padding: "10px 12px", background: "#050d18", flexShrink: 0, display: "flex", gap: 9, alignItems: "center" }}>
-            <input
-              ref={inputRef} value={input} disabled={waiting || done || qIdx < 0}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
-              placeholder={done ? "Investigation complete." : waiting ? "GHOST41_ID is typing..." : "Type your answer..."}
-              style={{ flex: 1, background: "#0a1a2a", border: "2px solid #1a5577", color: "#a8d8f0", fontFamily: "'Share Tech Mono',monospace", fontSize: 13, padding: "10px 13px", outline: "none", letterSpacing: 1, opacity: (waiting || done || qIdx < 0) ? 0.5 : 1, transition: "border-color 0.15s,box-shadow 0.15s" }}
-              onFocus={e => { e.target.style.borderColor = "#00aacc"; e.target.style.boxShadow = "0 0 10px rgba(0,170,200,0.25)"; }}
-              onBlur={e => { e.target.style.borderColor = "#1a5577"; e.target.style.boxShadow = "none"; }}
-            />
-            <button onClick={handleSend} disabled={!input.trim() || waiting || done}
-              style={{ padding: "10px 16px", background: (!input.trim() || waiting || done) ? "#050d18" : "#071e30", border: `1px solid ${(!input.trim() || waiting || done) ? "#1a2a3a" : "#0077aa"}`, color: (!input.trim() || waiting || done) ? "#1a3344" : "#00aacc", fontFamily: "'Share Tech Mono',monospace", fontSize: 12, letterSpacing: 2, cursor: (!input.trim() || waiting || done) ? "not-allowed" : "pointer", transition: "all 0.15s", whiteSpace: "nowrap" }}>
-              [ SEND ]
-            </button>
           </div>
         </>
       )}
@@ -528,7 +622,7 @@ function StatusBar({ label, pct, color, sub, active }: { label: string; pct: num
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-        <span style={{ fontSize: 9, color: "#553322", letterSpacing: 1 }}>{label}</span>
+        <span style={{ fontSize: 9, color: "#997755", letterSpacing: 1 }}>{label}</span>
         {active && <span style={{ fontSize: 9, color, letterSpacing: 1 }}>{sub}</span>}
       </div>
       <div style={{ height: 12, background: "#0d0300", border: "1px solid #1a0500", overflow: "hidden" }}>
@@ -553,6 +647,7 @@ function ActBtn({ label, clr, bg, bdr, disabled, onClick }: { label: string; clr
 
 /* ══════════════════════════ MAIN GAME ══════════════════════════════════════ */
 interface DataLogEntry { evId: number; time: string; title: string; data: string; }
+interface EvHistoryEntry { evId: number; action: "INTERVENE" | "IGNORE" | null; dataDone: boolean; reqData: string | null; flash: { text: string; ok: boolean } | null; }
 
 export default function NeuroBandGame() {
   const [phase, setPhase] = useState<Phase>("TIMELINE");
@@ -572,6 +667,11 @@ export default function NeuroBandGame() {
   const [hintOpen, setHintOpen] = useState(false);
   const [ghostOpen, setGhostOpen] = useState(false);
   const [dataLog, setDataLog] = useState<DataLogEntry[]>([]);
+  const [showEvPopup, setShowEvPopup] = useState(true);
+  const [evHistory, setEvHistory] = useState<EvHistoryEntry[]>([]);
+  const [viewIdx, setViewIdx] = useState<number | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewEvIdx, setReviewEvIdx] = useState<number | null>(null);
 
   const chatRef = useRef<HTMLDivElement>(null);
   const evRef = useRef<HTMLDivElement>(null);
@@ -621,16 +721,18 @@ export default function NeuroBandGame() {
     setChatLog(p => [...p, ...arr].slice(-15));
   }, []);
 
+  const [lastAction, setLastAction] = useState<"INTERVENE" | "IGNORE" | null>(null);
+
   const handlePri = (action: "INTERVENE" | "IGNORE") => {
     if (priDone || ev.noAction) return;
     setPriDone(true); if (!firstAct) setFirstAct(true); setHintOpen(false);
-    const r = ev.results[action], isOk = action === ev.correct, mc = ev.crit && action === "IGNORE" && !isOk;
+    setLastAction(action);
+    const r = ev.results[action], isOk = action === ev.correct;
     let ft = "", fo = false;
-    if (action === "INTERVENE" && isOk && ev.crit) { ft = "⚡ CRITICAL INTERVENTION  +55 pts"; fo = true; }
-    else if (action === "INTERVENE" && isOk) { ft = "✓ CORRECT INTERVENTION  +25 pts"; fo = true; }
+    if (action === "INTERVENE" && isOk) { ft = `✓ CORRECT INTERVENTION  +${r.sc} pts`; fo = true; }
     else if (action === "IGNORE" && isOk) { ft = "✓ CORRECT — NO PENALTY"; fo = true; }
-    else if (mc) { ft = "✘ MISSED CRITICAL EVENT  −40 pts"; }
-    else if (action === "INTERVENE") { ft = "✘ INCORRECT INTERVENTION  −25 pts"; }
+    else if (action === "INTERVENE" && !isOk) { ft = `✘ INCORRECT INTERVENTION  ${r.sc} pts`; }
+    else if (action === "IGNORE" && !isOk) { ft = `✘ SHOULD HAVE INTERVENED  ${r.sc} pts`; }
     setScore(s => s + r.sc); setStab(r.stab); setRisk(r.risk); setOv(r.ov);
     if (ft) setFlash({ text: ft, ok: fo });
     if (r.chat) addChat(r.chat);
@@ -652,6 +754,9 @@ export default function NeuroBandGame() {
 
   const handleNext = () => {
     if (!priDone && !ev.noAction) return;
+    // Save this event to history before advancing
+    setEvHistory(h => [...h, { evId: ev.id, action: lastAction, dataDone, reqData, flash }]);
+    setLastAction(null); setViewIdx(null);
     setPriDone(false); setDataDone(false); setReqData(null); setFlash(null); setHintTxt(null);
     if (ev.noAction || evIdx >= EVENTS.length - 1) {
       setStab(0); setRisk("CRITICAL"); setOv("ACTIVE"); setPhase("COMPLETE");
@@ -672,7 +777,7 @@ export default function NeuroBandGame() {
     setPhase("TIMELINE"); setEvIdx(0); setScore(0); setStab(95); setRisk("LOW"); setOv("OFF");
     setChatLog(INIT_CHAT); setReqData(null); setFirstAct(false); setPriDone(false); setDataDone(false);
     setFlash(null); setHintsUsed(0); setHintTxt(null); setHintOpen(false);
-    setGhostOpen(false); setDataLog([]);
+    setGhostOpen(false); setDataLog([]); setShowEvPopup(true);
   };
 
   /* ─── RENDER ──────────────────────────────────────────────────────────── */
@@ -681,6 +786,11 @@ export default function NeuroBandGame() {
 
       {/* Scanlines */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 500, background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)" }} />
+
+      {/* Intro briefing — shown ONCE before event 1 only */}
+      {phase === "TIMELINE" && showEvPopup && evIdx === 0 && (
+        <PreEventBriefing onClose={() => setShowEvPopup(false)} />
+      )}
 
       {/* Ghost always in corner — dim during timeline, glowing when complete */}
       <GhostWidget active={isComplete} onOpen={() => setGhostOpen(o => !o)} />
@@ -776,9 +886,119 @@ export default function NeuroBandGame() {
             </div>
           </div>
 
-          <button onClick={handleReset} style={{ padding: "11px 28px", background: "linear-gradient(135deg,#440000,#1a0000)", border: "1px solid #cc2200", color: "#ff4400", fontSize: 12, letterSpacing: 4, cursor: "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
-            ↺ RESTART
+          {/* Review past events button */}
+          <button onClick={() => { setReviewOpen(true); setReviewEvIdx(null); }}
+            style={{ padding: "10px 28px", background: "none", border: "1px solid #442200", color: "#aa6633", fontSize: 11, letterSpacing: 3, cursor: "pointer", fontFamily: "'Share Tech Mono',monospace", maxWidth: 580, width: "100%" }}>
+            ◀ REVIEW PAST EVENTS
           </button>
+
+        </div>
+      )}
+
+      {/* ── EVENT REVIEW OVERLAY — shown over complete screen ───────────────── */}
+      {phase === "COMPLETE" && reviewOpen && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 600, background: "#0a0202", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Header */}
+          <div style={{ background: "linear-gradient(180deg,#160303,#0c0101)", borderBottom: "2px solid #aa1800", padding: "10px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, letterSpacing: 4, color: "#ff4400" }}>
+              {reviewEvIdx !== null ? `EVENT ${String(EVENTS[reviewEvIdx].id).padStart(2, "0")} — ${EVENTS[reviewEvIdx].title}` : "EVENT REVIEW"}
+            </div>
+            <button onClick={() => { setReviewOpen(false); setReviewEvIdx(null); }}
+              style={{ background: "none", border: "1px solid #551100", color: "#cc4422", fontSize: 10, letterSpacing: 3, padding: "5px 14px", cursor: "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
+              ✕ BACK TO SUMMARY
+            </button>
+          </div>
+
+          {reviewEvIdx === null ? (
+            // ── EVENT PICKER ──
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px" }}>
+              <div style={{ fontSize: 10, color: "#664422", letterSpacing: 3, marginBottom: 14 }}>SELECT AN EVENT TO REVIEW — ALL DECISIONS ARE LOCKED</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {EVENTS.map((e, i) => {
+                  const hist = evHistory[i];
+                  const catC = CAT_COLOR[e.cat] || "#888";
+                  const actionLabel = e.noAction ? "—" : hist?.action ?? "—";
+                  const actionColor = !hist?.action ? "#443322" : hist.action === "INTERVENE" ? "#ff4400" : "#00aa44";
+                  const wasCorrect = hist?.action === e.correct || (e.correct === "REQUEST_DATA" && hist?.dataDone);
+                  return (
+                    <button key={e.id} onClick={() => setReviewEvIdx(i)}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#0d0300", border: "1px solid #2a0800", cursor: "pointer", textAlign: "left", fontFamily: "'Share Tech Mono',monospace" }}>
+                      <span style={{ fontSize: 12, color: "#553322", minWidth: 28, flexShrink: 0 }}>{String(e.id).padStart(2, "0")}</span>
+                      <span style={{ fontSize: 9, padding: "1px 6px", color: catC, border: `1px solid ${catC}40`, background: `${catC}10`, flexShrink: 0 }}>{e.cat}</span>
+                      <span style={{ fontSize: 11, color: "#ccaa88", flex: 1 }}>{e.title}</span>
+                      <span style={{ fontSize: 10, color: actionColor, minWidth: 80, textAlign: "right", flexShrink: 0 }}>
+                        {actionLabel}{hist && !e.noAction ? (wasCorrect ? " ✓" : " ✗") : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            // ── PAST EVENT DETAIL ──
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px" }}>
+                {(() => {
+                  const pastEv = EVENTS[reviewEvIdx];
+                  const pastHist = evHistory[reviewEvIdx];
+                  const pastCatC = CAT_COLOR[pastEv.cat] || "#888";
+                  return (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 10, color: "#553322", letterSpacing: 2 }}>⏱ {pastEv.time}</span>
+                        <span style={{ fontSize: 9, padding: "1px 7px", letterSpacing: 1, color: pastCatC, border: `1px solid ${pastCatC}`, background: `${pastCatC}18` }}>{pastEv.cat}</span>
+                      </div>
+                      <div style={{ fontFamily: "'VT323',monospace", fontSize: 22, color: "#ffddcc", marginBottom: 10, letterSpacing: 1 }}>{pastEv.title}</div>
+                      <div style={{ fontSize: 13, color: "#998870", lineHeight: 1.75, whiteSpace: "pre-line", marginBottom: 14, borderLeft: "2px solid #2a0800", paddingLeft: 12 }}>{pastEv.body}</div>
+                      {pastHist?.reqData && (
+                        <div style={{ background: "#030d03", border: "1px solid #003a00", padding: 12, marginBottom: 14 }}>
+                          <div style={{ fontSize: 9, letterSpacing: 3, color: "#005522", marginBottom: 6, borderBottom: "1px solid #003a00", paddingBottom: 4 }}>REQUESTED DATA</div>
+                          <div style={{ fontSize: 12, color: "#00cc66", whiteSpace: "pre-line", lineHeight: 1.6 }}>{pastHist.reqData}</div>
+                        </div>
+                      )}
+                      {pastHist?.flash && (
+                        <div style={{ padding: "8px 12px", marginBottom: 12, fontSize: 14, fontFamily: "'VT323',monospace", letterSpacing: 3, textAlign: "center", color: pastHist.flash.ok ? "#00ff88" : "#ff2200", background: pastHist.flash.ok ? "rgba(0,255,136,0.07)" : "rgba(255,30,0,0.07)", border: `1px solid ${pastHist.flash.ok ? "#004422" : "#440000"}` }}>
+                          {pastHist.flash.text}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+              {/* Decision display + nav */}
+              <div style={{ borderTop: "2px solid #2a0e00", background: "#080200", padding: "12px 16px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ fontSize: 9, color: "#886644", letterSpacing: 3, marginBottom: 2 }}>YOUR DECISION — READ ONLY</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(["INTERVENE", "IGNORE", "REQUEST_DATA"] as const).map(a => {
+                    const hist = evHistory[reviewEvIdx];
+                    const wasChosen = a === "INTERVENE" || a === "IGNORE" ? hist?.action === a : hist?.dataDone;
+                    const lbl = a === "INTERVENE" ? "⛔ INTERVENE" : a === "IGNORE" ? "✓ IGNORE" : "🔍 REQ. DATA";
+                    const clr = a === "INTERVENE" ? "#ff4400" : a === "IGNORE" ? "#00aa44" : "#0088cc";
+                    const bdr = a === "INTERVENE" ? "#aa1800" : a === "IGNORE" ? "#004400" : "#003366";
+                    return (
+                      <button key={a} disabled style={{ flex: 1, padding: "10px 4px", cursor: "not-allowed", background: wasChosen ? (a === "INTERVENE" ? "#2a0000" : a === "IGNORE" ? "#002200" : "#001a2a") : "#0a0a0a", border: `1px solid ${wasChosen ? bdr : "#1a1a1a"}`, color: wasChosen ? clr : "#2a2a2a", fontSize: 11, letterSpacing: 1, fontFamily: "'Share Tech Mono',monospace", opacity: wasChosen ? 1 : 0.2 }}>
+                        {lbl}{wasChosen ? " ✓" : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setReviewEvIdx(v => v! > 0 ? v! - 1 : v)} disabled={reviewEvIdx <= 0}
+                    style={{ flex: 1, padding: "7px 4px", background: "none", border: "1px solid #2a1800", color: reviewEvIdx <= 0 ? "#332200" : "#aa7744", fontSize: 10, letterSpacing: 2, cursor: reviewEvIdx <= 0 ? "not-allowed" : "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
+                    ◀ PREV
+                  </button>
+                  <button onClick={() => setReviewEvIdx(null)}
+                    style={{ flex: 2, padding: "7px 4px", background: "#0a0300", border: "1px solid #553300", color: "#cc7733", fontSize: 10, letterSpacing: 2, cursor: "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
+                    ▲ EVENT LIST
+                  </button>
+                  <button onClick={() => setReviewEvIdx(v => v! < EVENTS.length - 1 ? v! + 1 : v)} disabled={reviewEvIdx >= EVENTS.length - 1}
+                    style={{ flex: 1, padding: "7px 4px", background: "none", border: "1px solid #2a1800", color: reviewEvIdx >= EVENTS.length - 1 ? "#332200" : "#aa7744", fontSize: 10, letterSpacing: 2, cursor: reviewEvIdx >= EVENTS.length - 1 ? "not-allowed" : "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
+                    NEXT ▶
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -799,12 +1019,9 @@ export default function NeuroBandGame() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 10, color: "#553322", letterSpacing: 2 }}>⏱ {ev.time}</span>
                   <span style={{ fontSize: 9, padding: "1px 7px", letterSpacing: 1, color: catC, border: `1px solid ${catC}`, background: `${catC}18` }}>{ev.cat}</span>
-                  {ev.crit && <span className="nb-blink" style={{ fontSize: 9, padding: "1px 7px", letterSpacing: 1, color: "#ff0033", border: "1px solid #aa0022", background: "rgba(200,0,30,0.1)" }}>CRITICAL</span>}
-                  {ev.noAction && <span style={{ fontSize: 9, padding: "1px 7px", letterSpacing: 1, color: "#660000", border: "1px solid #440000" }}>NO ACTION</span>}
                 </div>
                 <div style={{ fontFamily: "'VT323',monospace", fontSize: 20, color: "#ffddcc", marginBottom: 11, letterSpacing: 1, textShadow: "0 0 8px rgba(255,80,20,0.25)" }}>{ev.title}</div>
                 <div style={{ fontSize: 13, color: "#998870", lineHeight: 1.75, whiteSpace: "pre-line", marginBottom: 14, borderLeft: "2px solid #2a0800", paddingLeft: 12 }}>{ev.body}</div>
-
                 {reqData && (
                   <div className="nb-fin" style={{ background: "#030d03", border: "1px solid #003a00", padding: 12, marginBottom: 14 }}>
                     <div style={{ fontSize: 9, letterSpacing: 3, color: "#005522", marginBottom: 6, borderBottom: "1px solid #003a00", paddingBottom: 4 }}>REQUESTED DATA</div>
@@ -812,7 +1029,10 @@ export default function NeuroBandGame() {
                   </div>
                 )}
                 {hintTxt && (
-                  <div className="nb-fin" style={{ background: "#030d03", border: "1px solid #003a00", padding: "9px 12px", marginBottom: 14, fontSize: 12, color: "#00aa55", lineHeight: 1.5 }}>{hintTxt}</div>
+                  <div className="nb-fin" style={{ background: "#080800", border: "1px solid #554400", padding: "9px 12px", marginBottom: 14 }}>
+                    <div style={{ fontSize: 9, letterSpacing: 3, color: "#776633", marginBottom: 5, borderBottom: "1px solid #332200", paddingBottom: 4 }}>HINT</div>
+                    <div style={{ fontSize: 12, color: "#ccaa44", lineHeight: 1.55 }}>{hintTxt}</div>
+                  </div>
                 )}
                 {(priDone || ev.noAction) && (
                   <button onClick={handleNext} style={{ width: "100%", padding: 11, background: "#001500", border: "1px solid #006600", color: "#00bb44", fontSize: 12, letterSpacing: 4, cursor: "pointer", fontFamily: "'Share Tech Mono',monospace", marginTop: 4 }}>
@@ -831,26 +1051,10 @@ export default function NeuroBandGame() {
                   <ActBtn label="⛔ INTERVENE" clr="#ff4400" bg="linear-gradient(135deg,#3a0000,#1a0000)" bdr="#aa1800" disabled={priDone || !!ev.noAction} onClick={() => handlePri("INTERVENE")} />
                   <ActBtn label="✓ IGNORE" clr="#00aa44" bg="linear-gradient(135deg,#001a00,#000d00)" bdr="#004400" disabled={priDone || !!ev.noAction} onClick={() => handlePri("IGNORE")} />
                   <ActBtn label="🔍 REQ. DATA" clr="#0088cc" bg="linear-gradient(135deg,#001122,#000a14)" bdr="#003366" disabled={dataDone || !!ev.noAction} onClick={handleData} />
-                  <div style={{ position: "relative" }}>
-                    <button disabled={hintsUsed >= 3} onClick={() => setHintOpen(o => !o)}
-                      style={{ padding: "12px 12px", height: "100%", background: hintsUsed >= 3 ? "#0a0a0a" : "linear-gradient(135deg,#1a1000,#0d0800)", border: `1px solid ${hintsUsed >= 3 ? "#1a1a1a" : "#3a2800"}`, color: hintsUsed >= 3 ? "#222" : "#886633", fontSize: 10, letterSpacing: 1, whiteSpace: "nowrap", cursor: hintsUsed >= 3 ? "not-allowed" : "pointer", fontFamily: "'Share Tech Mono',monospace", textAlign: "center", opacity: hintsUsed >= 3 ? 0.28 : 1 }}>
-                      💡 HINT<div style={{ fontSize: 8, opacity: 0.6, marginTop: 2 }}>{3 - hintsUsed} left</div>
-                    </button>
-                    {hintOpen && (
-                      <div className="nb-fin" style={{ position: "absolute", bottom: "calc(100% + 4px)", right: 0, background: "#0a0302", border: "1px solid #2a1200", width: 215, zIndex: 200 }}>
-                        {HINTS.map((hn, i) => (
-                          <button key={i} disabled={hintsUsed > i} onClick={() => handleHint(i)}
-                            style={{ width: "100%", padding: "9px 12px", background: hintsUsed > i ? "#050505" : "#0d0403", border: "none", borderBottom: i < 2 ? "1px solid #1a0800" : "none", color: hintsUsed > i ? "#1e1e1e" : "#886644", fontSize: 11, letterSpacing: 1, cursor: hintsUsed > i ? "not-allowed" : "pointer", fontFamily: "'Share Tech Mono',monospace", display: "flex", justifyContent: "space-between" }}>
-                            <span>{hn.level} HINT</span><span style={{ color: "#553322" }}>{hn.cost} pts</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={() => { setScore(s => s - 150); setPhase("COMPLETE"); }}
-                    style={{ background: "none", border: "1px solid #1a0800", color: "#3a1100", fontSize: 9, letterSpacing: 2, padding: "4px 12px", cursor: "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
+                    style={{ background: "none", border: "1px solid #332200", color: "#886644", fontSize: 9, letterSpacing: 2, padding: "4px 12px", cursor: "pointer", fontFamily: "'Share Tech Mono',monospace" }}>
                     SKIP TASK [−150 pts]
                   </button>
                 </div>
@@ -884,7 +1088,7 @@ export default function NeuroBandGame() {
 
           {/* PANEL 4: STATUS */}
           <div style={{ background: "#060000", borderTop: "1px solid #1a0800", padding: "10px 22px", flexShrink: 0 }}>
-            <div style={{ fontSize: 9, letterSpacing: 4, color: "#552200", marginBottom: 8, borderBottom: "1px solid #150400", paddingBottom: 4 }}>PANEL 4 — SYSTEM STATUS</div>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#886644", marginBottom: 8, borderBottom: "1px solid #150400", paddingBottom: 4 }}>PANEL 4 — SYSTEM STATUS</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px 26px" }}>
               <StatusBar active={firstAct} label="NEURAL STABILITY" pct={stab} color={stabColor(stab)} sub={`${stab}% — ${stabLabel(stab)}`} />
               <StatusBar active={firstAct} label="SYSTEM RISK" pct={RISK_PCT[risk]} color={RISK_COLOR[risk]} sub={risk} />
