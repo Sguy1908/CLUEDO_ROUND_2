@@ -918,7 +918,7 @@ function PuzzleSimon({ solved, onSolve, onToast, active }: { solved: boolean; on
     const [lives, setLives] = useState(MAX_LIVES);
     const seqRef = useRef<number[]>([]); const roundRef = useRef(0);
 
-    const go = useCallback((seq, round) => {
+    const go = useCallback((seq: number[], round: number) => {
         const ns = [...seq, Math.floor(Math.random() * 4)];
         seqRef.current = ns; roundRef.current = round;
         setPs([]); setWaiting(false);
