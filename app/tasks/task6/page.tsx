@@ -1160,6 +1160,7 @@ const PrepRoom = () => {
     const [showLockDialog, setShowLockDialog] = useState(false);
     const [suspectsLocked, setSuspectsLocked] = useState(false);
     const [showSubmitPage, setShowSubmitPage] = useState(false);
+    const [justification, setJustification] = useState("");
     const [showWelcomePopup, setShowWelcomePopup] = useState(true);
     const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
         "Collected Evidence": true,
@@ -1209,7 +1210,7 @@ const PrepRoom = () => {
         try {
             const res = await fetch("/api/tasks/submit", {
                 method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
-                body: JSON.stringify({ taskId: "task6", action: "finalSubmission", payload: { suspects: selectedSuspects } })
+                body: JSON.stringify({ taskId: "task6", action: "finalSubmission", payload: { suspects: selectedSuspects, justification } })
             });
             const data = await res.json();
             if (data.isCorrect) {
@@ -1234,8 +1235,27 @@ const PrepRoom = () => {
                         <div style={styles.submitIcon}>🔍</div>
                         <h1 style={styles.submitTitle}>EVIDENCE SUBMISSION</h1>
                         <p style={styles.submitText}>
-                            To submit your evidence, please fill out the form:
+                            To submit your evidence, please provide your final justification:
                         </p>
+                        <textarea
+                            placeholder="Type your justification here (min 10 characters)..."
+                            style={{
+                                width: '100%',
+                                height: '120px',
+                                background: '#241010',
+                                border: '1px solid #3a1818',
+                                borderRadius: '3px',
+                                color: '#e8c8c8',
+                                fontFamily: "'Share Tech Mono', monospace",
+                                fontSize: '0.9rem',
+                                padding: '10px',
+                                marginBottom: '20px',
+                                outline: 'none',
+                                resize: 'none'
+                            }}
+                            value={justification}
+                            onChange={(e) => setJustification(e.target.value)}
+                        />
                         <button
                             style={styles.submitButton}
                             onClick={handleSubmit}
