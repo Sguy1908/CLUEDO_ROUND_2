@@ -1,10 +1,5 @@
-'use client'
+use client'
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-
-import { StaticImageData } from 'next/image';
-import systemInspection1 from './system_inspection_1.jpg';
-import systemInspection2 from './system_inspection_2.jpg';
 
 // ==================== FILE SECTIONS ====================
 const FILE_SECTIONS: { title: string; icon: string; files: string[] }[] = [
@@ -45,7 +40,7 @@ const FILE_SECTIONS: { title: string; icon: string; files: string[] }[] = [
 ];
 
 // ==================== FILE DATA ====================
-const FILE_DATA: { [key: string]: { icon: string; content: string; images?: StaticImageData[] } } = {
+const FILE_DATA: { [key: string]: { icon: string; content: string; images?: string[] } } = {
     "Autopsy Report": {
         icon: "📋",
         content: `FORENSIC POSTMORTEM REPORT > Case ID: NB-IR-2147 | Status: Finalized
@@ -1134,7 +1129,7 @@ Visual inspection suggests unit differs from recorded BOM.
 Limiter module appears to have been replaced with a
 different revision (REV-B instead of REV-A).
 This substitution was NOT documented in maintenance logs.`,
-        images: [systemInspection1, systemInspection2]
+        images: []
     }
 };
 
@@ -1151,8 +1146,6 @@ const SUSPECTS = [
 
 // ==================== MAIN COMPONENT ====================
 const PrepRoom = () => {
-    const router = useRouter();
-
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [selectedSuspects, setSelectedSuspects] = useState<(string | null)[]>([null, null, null]);
@@ -1160,7 +1153,6 @@ const PrepRoom = () => {
     const [showLockDialog, setShowLockDialog] = useState(false);
     const [suspectsLocked, setSuspectsLocked] = useState(false);
     const [showSubmitPage, setShowSubmitPage] = useState(false);
-    const [justification, setJustification] = useState("");
     const [showWelcomePopup, setShowWelcomePopup] = useState(true);
     const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
         "Collected Evidence": true,
@@ -1202,24 +1194,8 @@ const PrepRoom = () => {
         setShowLockDialog(false);
     };
 
-    const handleSubmit = async () => {
-        if (selectedSuspects.filter(Boolean).length < 3) {
-            alert("SELECT 3 SUSPECTS BEFORE SUBMITTING");
-            return;
-        }
-        try {
-            const res = await fetch("/api/tasks/submit", {
-                method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
-                body: JSON.stringify({ taskId: "task6", action: "finalSubmission", payload: { suspects: selectedSuspects, justification } })
-            });
-            const data = await res.json();
-            if (data.isCorrect) {
-                alert("FINAL SUBMISSION LOGGED. INVESTIGATION COMPLETE.");
-                router.push("/");
-            } else {
-                alert("SUBMISSION FAILED. CHECK YOUR SELECTIONS.");
-            }
-        } catch { alert("CONNECTION ERROR"); }
+    const handleSubmit = () => {
+        window.open("https://forms.gle/VPNuSJUaaoPWoqJp7", "_blank");
     };
 
     const suspectCount = selectedSuspects.filter(s => s !== null).length;
@@ -1235,30 +1211,13 @@ const PrepRoom = () => {
                         <div style={styles.submitIcon}>🔍</div>
                         <h1 style={styles.submitTitle}>EVIDENCE SUBMISSION</h1>
                         <p style={styles.submitText}>
-                            To submit your evidence, please provide your final justification:
+                            To submit your evidence, please fill out the form:
                         </p>
-                        <textarea
-                            placeholder="Type your justification here (min 10 characters)..."
-                            style={{
-                                width: '100%',
-                                height: '120px',
-                                background: '#241010',
-                                border: '1px solid #3a1818',
-                                borderRadius: '3px',
-                                color: '#e8c8c8',
-                                fontFamily: "'Share Tech Mono', monospace",
-                                fontSize: '0.9rem',
-                                padding: '10px',
-                                marginBottom: '20px',
-                                outline: 'none',
-                                resize: 'none'
-                            }}
-                            value={justification}
-                            onChange={(e) => setJustification(e.target.value)}
-                        />
-                        <button
-                            style={styles.submitButton}
-                            onClick={handleSubmit}
+                        <a
+                            href="https://forms.gle/VPNuSJUaaoPWoqJp7"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{...styles.submitButton, display: 'inline-block', textDecoration: 'none'}}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.background = '#ff1111';
                                 e.currentTarget.style.boxShadow = '0 0 30px #ff111188';
@@ -1269,7 +1228,7 @@ const PrepRoom = () => {
                             }}
                         >
                             SUBMIT EVIDENCE
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -1527,8 +1486,8 @@ const PrepRoom = () => {
                             <pre style={styles.fileContent}>{selectedFile && FILE_DATA[selectedFile as keyof typeof FILE_DATA].content}</pre>
                             {selectedFile && FILE_DATA[selectedFile as keyof typeof FILE_DATA].images && (
                                 <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {FILE_DATA[selectedFile as keyof typeof FILE_DATA].images!.map((img, i) => (
-                                        <img key={i} src={img.src} alt={`${selectedFile} - Image ${i + 1}`} style={{ width: '100%', borderRadius: '4px', border: '1px solid #3a1818' }} />
+                                            {FILE_DATA[selectedFile as keyof typeof FILE_DATA].images!.map((img, i) => (
+                                        <img key={i} src={img} alt={`${selectedFile} - Image ${i + 1}`} style={{ width: '100%', borderRadius: '4px', border: '1px solid #3a1818' }} />
                                     ))}
                                 </div>
                             )}
