@@ -1,10 +1,5 @@
 'use client'
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-
-import { StaticImageData } from 'next/image';
-import systemInspection1 from './system_inspection_1.jpg';
-import systemInspection2 from './system_inspection_2.jpg';
 
 // ==================== FILE SECTIONS ====================
 const FILE_SECTIONS: { title: string; icon: string; files: string[] }[] = [
@@ -45,7 +40,7 @@ const FILE_SECTIONS: { title: string; icon: string; files: string[] }[] = [
 ];
 
 // ==================== FILE DATA ====================
-const FILE_DATA: { [key: string]: { icon: string; content: string; images?: StaticImageData[] } } = {
+const FILE_DATA: { [key: string]: { icon: string; content: string; images?: string[] } } = {
     "Autopsy Report": {
         icon: "📋",
         content: `FORENSIC POSTMORTEM REPORT > Case ID: NB-IR-2147 | Status: Finalized
@@ -1134,7 +1129,7 @@ Visual inspection suggests unit differs from recorded BOM.
 Limiter module appears to have been replaced with a
 different revision (REV-B instead of REV-A).
 This substitution was NOT documented in maintenance logs.`,
-        images: [systemInspection1, systemInspection2]
+        images: []
     }
 };
 
@@ -1151,8 +1146,6 @@ const SUSPECTS = [
 
 // ==================== MAIN COMPONENT ====================
 const PrepRoom = () => {
-    const router = useRouter();
-
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [selectedSuspects, setSelectedSuspects] = useState<(string | null)[]>([null, null, null]);
@@ -1269,7 +1262,7 @@ const PrepRoom = () => {
                             }}
                         >
                             SUBMIT EVIDENCE
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -1501,34 +1494,34 @@ const PrepRoom = () => {
                         }
                     }}
                 >
-                    <div style={styles.modalContent}>
-                        <div style={styles.modalHeader}>
-                            <div style={styles.modalHeaderLeft}>
-                                <span style={styles.modalIcon}>{FILE_DATA[selectedFile as keyof typeof FILE_DATA].icon}</span>
-                                <h3 style={styles.modalTitle}>{selectedFile}</h3>
-                            </div>
-                            <button
-                                data-testid="close-file-modal"
-                                style={styles.closeButton}
-                                onClick={() => setSelectedFile(null)}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = '#ff3333';
-                                    e.currentTarget.style.color = '#ff3333';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.borderColor = '#cc2222';
-                                    e.currentTarget.style.color = '#cc2222';
-                                }}
-                            >
-                                ✕ CLOSE
-                            </button>
-                        </div>
-                        <div style={styles.modalBody}>
-                            <pre style={styles.fileContent}>{selectedFile && FILE_DATA[selectedFile as keyof typeof FILE_DATA].content}</pre>
-                            {selectedFile && FILE_DATA[selectedFile as keyof typeof FILE_DATA].images && (
-                                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {FILE_DATA[selectedFile as keyof typeof FILE_DATA].images!.map((img, i) => (
-                                        <img key={i} src={img.src} alt={`${selectedFile} - Image ${i + 1}`} style={{ width: '100%', borderRadius: '4px', border: '1px solid #3a1818' }} />
+                  <div style={styles.modalContent}>
+                      <div style={styles.modalHeader}>
+                          <div style={styles.modalHeaderLeft}>
+                              <span style={styles.modalIcon}>{FILE_DATA[selectedFile as keyof typeof FILE_DATA].icon}</span>
+                              <h3 style={styles.modalTitle}>{selectedFile}</h3>
+                          </div>
+                          <button
+                              data-testid="close-file-modal"
+                              style={styles.closeButton}
+                              onClick={() => setSelectedFile(null)}
+                              onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = '#ff3333';
+                                  e.currentTarget.style.color = '#ff3333';
+                              }}
+                              onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = '#cc2222';
+                                  e.currentTarget.style.color = '#cc2222';
+                              }}
+                          >
+                              ✕ CLOSE
+                          </button>
+                      </div>
+                      <div style={styles.modalBody}>
+                          <pre style={styles.fileContent}>{selectedFile && FILE_DATA[selectedFile as keyof typeof FILE_DATA].content}</pre>
+                          {selectedFile && FILE_DATA[selectedFile as keyof typeof FILE_DATA].images && (
+                              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                          {FILE_DATA[selectedFile as keyof typeof FILE_DATA].images!.map((img, i) => (
+                                      <img key={i} src={img} alt={`${selectedFile} - Image ${i + 1}`} style={{ width: '100%', borderRadius: '4px', border: '1px solid #3a1818' }} />
                                     ))}
                                 </div>
                             )}
@@ -2191,5 +2184,4 @@ const styles: { [key: string]: React.CSSProperties } = {
         boxShadow: '0 0 15px #ff333333'
     }
 };
-
 export default PrepRoom;
